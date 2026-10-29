@@ -1,10 +1,12 @@
 # CSE Videos: project plan
 
+> **Ideas only.** Nothing here is decided yet. Brother Crosby may want the site modeled after the department's CS & SE site, https://byui-cse.github.io/cs-se/, and that site still needs a close look before a direction is locked.
+
 A video library for the reels on the department Instagram, [@byui.cse](https://www.instagram.com/byui.cse/). A teacher finds the right reel in seconds, copies a link, and sends it to a student who needs some inspiration. The goal is a site polished enough to live on the department's official domain.
 
 - **Stakeholder:** Brother Crosby
 - **Builder:** Levi Mackay, wearing every hat a real web team would
-- **Direction:** B, matched to the look of byui.edu
+- **Direction:** undecided. The current draft is B, matched to byui.edu. The other option is to model it on the CS & SE site.
 
 ## Who it's for
 
@@ -12,7 +14,15 @@ A video library for the reels on the department Instagram, [@byui.cse](https://w
 2. **Students who get a link.** They open it on a phone and watch right away, with no login.
 3. **The department.** Crosby or a TA adds a new reel in a couple of minutes, with no code.
 
-## Direction B
+## Reference: the CS & SE site
+
+https://byui-cse.github.io/cs-se/ is the department's newest site and may be the model Brother Crosby has in mind. It still needs a full review.
+
+- **Take:** its colors (navy, BYU-I blue, a gold accent) and its overall structure, so the two sites feel related.
+- **Avoid:** it reads as AI generated in places: uppercase labels above nearly every section, a grid of icon cards, pill buttons, and a gold accent line in the headline. We take its colors and structure, not those patterns.
+- **Next step:** compare it side by side with draft B and decide with Brother Crosby.
+
+## Draft direction: B
 
 B uses byui.edu's own visual language, so the library feels like part of the university site rather than a side project.
 
@@ -33,7 +43,7 @@ These colors come from byui.edu's live stylesheet.
 
 **Type.** byui.edu uses Acumin Pro, with the semi condensed width for headlines. The prototype uses Archivo, a free font with a width axis, as a stand in: about 87% width for headlines and 100% for body text. If the site moves onto the official domain, ask whether the university's Acumin license covers it.
 
-**Shape and spacing.** Pill buttons and inputs, as on byui.edu. 12px radius on video covers. Spacing on an 8px grid.
+**Shape and spacing.** byui.edu uses pill buttons and inputs. Pills are also one of the patterns to avoid from the CS & SE site, so test a squarer button before locking it in. 12px radius on video covers. Spacing on an 8px grid.
 
 ### Page structure
 
@@ -67,7 +77,7 @@ Rules: animate only transform and opacity. Nothing waits on an animation before 
 A design review of the prototype flagged these:
 
 - [ ] Curate the hero wall. No repeated faces next to each other, and no captions cut mid word. Covers pulled from the original video files would solve most of it.
-- [ ] Replace Instagram's embed frame, which clashes with the palette, if self hosting is approved (question 1 below).
+- [ ] Replace Instagram's embed frame, which clashes with the palette, if self hosting is approved (question 2 below).
 - [ ] Fill the empty space in the video sheet on wide screens: a longer description or a transcript, plus larger related videos.
 - [ ] Phones: tabs scroll sideways but need a clear cue, and dates shouldn't wrap.
 - [ ] On desktop, test a centered dialog against the bottom sheet and keep whichever teachers find faster.
@@ -116,6 +126,7 @@ Run like a small web team, even with one person.
 ## Milestones
 
 ### M0: Kickoff
+- [ ] Review the CS & SE site closely and compare it with draft B.
 - [ ] Walk Crosby through the prototype and get answers to the open questions.
 - [ ] Confirm the topics and the reel titles.
 - [ ] Set up the project board, labels, and issue and PR templates.
@@ -157,12 +168,13 @@ Run like a small web team, even with one person.
 
 ## Open questions for Brother Crosby
 
-1. Where should the videos play: Instagram's embed (simplest, shows Instagram's frame), self hosted files (cleanest, needs storage), or unlisted YouTube?
-2. Can we use the original video files for covers and short silent previews?
-3. Do the four topics match how teachers think about these videos?
-4. Should department news reels, like t-shirt day, be in the library?
-5. Who should we talk to about moving onto the department domain?
-6. Is the Monday sync a good time for a weekly demo?
+1. Should the library be modeled on the CS & SE site, on byui.edu, or a mix of the two?
+2. Where should the videos play: Instagram's embed (simplest, shows Instagram's frame), self hosted files (cleanest, needs storage), or unlisted YouTube?
+3. Can we use the original video files for covers and short silent previews?
+4. Do the four topics match how teachers think about these videos?
+5. Should department news reels, like t-shirt day, be in the library?
+6. Who should we talk to about moving onto the department domain?
+7. Is the Monday sync a good time for a weekly demo?
 
 ## Risks
 
