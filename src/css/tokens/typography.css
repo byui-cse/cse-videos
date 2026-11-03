@@ -1,0 +1,43 @@
+/**
+ * Type families, sizes, line heights, and weights.
+ * Mobile-first fluid scale. Nothing on the site is smaller than 1rem (16px).
+ * Free stand-ins for the official BYU-Idaho faces:
+ *   Source Sans 3 for Acumin (headings, UI), Source Serif 4 for Minion (body, quotes).
+ * To switch to the official fonts later, change the two family variables.
+ */
+:root {
+	--font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+	--font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+	--font-mono: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+
+	--font-heading: var(--font-sans);
+	--font-ui: var(--font-sans);
+	--font-body: var(--font-serif);
+	--font-quote: var(--font-serif);
+
+	--text-min: 1rem;                                           /* 16px floor: labels, captions, meta */
+	--text-sm: 1.0625rem;                                       /* 17px */
+	--text-body: clamp(1.1875rem, 1.12rem + 0.3vw, 1.3125rem);  /* 19px → 21px */
+	--text-lede: clamp(1.3125rem, 1.15rem + 0.7vw, 1.6875rem);  /* 21px → 27px */
+	--text-h4: clamp(1.25rem, 1.15rem + 0.45vw, 1.5rem);
+	--text-h3: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+	--text-h2: clamp(2rem, 1.5rem + 2.2vw, 3.5rem);
+	--text-h1: clamp(2.75rem, 1.6rem + 5vw, 6rem);
+	--text-stat: clamp(2.5rem, 1.8rem + 3vw, 4.25rem);
+
+	--leading-tight: 1.05;
+	--leading-heading: 1.15;
+	--leading-snug: 1.35;
+	--leading-body: 1.62;
+
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+	--weight-black: 850;
+
+	--tracking-heading: -0.02em;
+	--tracking-display: -0.035em;
+
+	--measure: 75ch;
+}
