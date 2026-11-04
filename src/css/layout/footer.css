@@ -1,0 +1,33 @@
+/**
+ * Site footer: department name and links, on the deep brand band.
+ */
+.site-footer {
+	padding-block: var(--space-2xl);
+	background: var(--color-band-deep);
+	color: var(--color-on-band);
+	font-family: var(--font-ui);
+
+	a {
+		color: var(--color-on-band);
+	}
+}
+
+.site-footer__inner {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-md) var(--space-xl);
+	justify-content: space-between;
+}
+
+.site-footer__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-md) var(--space-xl);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li + li {
+		margin: 0;
+	}
+}

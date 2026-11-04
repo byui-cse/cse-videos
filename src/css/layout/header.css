@@ -1,0 +1,38 @@
+/**
+ * Site header: the site name and the department it belongs to.
+ */
+.site-header {
+	border-block-end: 1px solid var(--color-line);
+	background: var(--color-surface);
+}
+
+.site-header__inner {
+	display: flex;
+	align-items: center;
+	min-height: var(--header-h);
+}
+
+.brand {
+	display: flex;
+	flex-direction: column;
+	color: var(--color-ink);
+	font-family: var(--font-ui);
+	line-height: 1.15;
+	text-decoration: none;
+
+	&:hover {
+		color: var(--color-ink);
+	}
+}
+
+.brand__name {
+	font-size: 1.25rem;
+	font-weight: var(--weight-black);
+	letter-spacing: -0.01em;
+	color: var(--color-link);
+}
+
+.brand__dept {
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+}

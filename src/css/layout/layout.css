@@ -1,0 +1,37 @@
+/**
+ * Page layout: content container, skip link, and a footer that stays at the
+ * bottom of short pages.
+ */
+body {
+	display: flex;
+	flex-direction: column;
+}
+.container {
+	width: var(--container);
+	margin-inline: auto;
+}
+
+.skip-link {
+	position: absolute;
+	inset-block-start: var(--space-xs);
+	inset-inline-start: var(--space-xs);
+	z-index: 200;
+	padding: var(--space-xs) var(--space-md);
+	border-radius: var(--radius-sm);
+	background: var(--color-brand);
+	color: var(--color-on-brand);
+	font-family: var(--font-ui);
+	font-size: var(--text-min);
+	font-weight: var(--weight-bold);
+	text-decoration: none;
+	transform: translateY(-200%);
+}
+
+.skip-link:focus {
+	transform: translateY(0);
+}
+
+.site-main {
+	flex: 1;
+	padding-block: var(--section-y);
+}

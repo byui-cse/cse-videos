@@ -1,0 +1,20 @@
+/**
+ * CSE Videos stylesheet. Tokens and base styles come from the CS & SE site;
+ * layout and components are this site's own.
+ * Layers: tokens → base → layout → components → utilities.
+ */
+@layer tokens, base, layout, components, utilities;
+
+@import "./tokens/colors.css" layer(tokens);
+@import "./tokens/typography.css" layer(tokens);
+@import "./tokens/spacing.css" layer(tokens);
+
+@import "./base/fonts.css" layer(base);
+@import "./base/reset.css" layer(base);
+@import "./base/typography.css" layer(base);
+
+@import "./layout/layout.css" layer(layout);
+@import "./layout/header.css" layer(layout);
+@import "./layout/footer.css" layer(layout);
+
+@import "./utilities/helpers.css" layer(utilities);
