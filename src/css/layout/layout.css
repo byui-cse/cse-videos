@@ -1,11 +1,12 @@
 /**
- * Page layout: content container, skip link, and a footer that stays at the
- * bottom of short pages.
+ * Page layout: content container, skip link, full-width bands, and a footer
+ * that stays at the bottom of short pages.
  */
 body {
 	display: flex;
 	flex-direction: column;
 }
+
 .container {
 	width: var(--container);
 	margin-inline: auto;
@@ -33,5 +34,22 @@ body {
 
 .site-main {
 	flex: 1;
+}
+
+.section {
 	padding-block: var(--section-y);
+}
+
+/* Full-width brand blue band with white text, as on the CS & SE site. */
+.band {
+	background: var(--color-band);
+	color: var(--color-on-band);
+
+	a:not(.button, .chip) {
+		color: var(--color-on-band);
+	}
+
+	:focus-visible {
+		outline-color: var(--color-band-accent);
+	}
 }

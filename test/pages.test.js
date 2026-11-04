@@ -1,0 +1,267 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { after, before, describe, it } from "node:test";
+import { build, siteUrlFrom } from "../scripts/build.js";
+
+const VIDEOS = [
+    {
+        id: "sample-short",
+        title: "Career Quest, Part 1",
+        description: "First line\nsecond line\n\nA <b>bold</b> claim & more",
+        youtube: "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+        instagram: "https://www.instagram.com/reel/DZYXMdzMV0w/",
+        length: "1:05",
+        attributions: ["Music from the Instagram library", "Photo used under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)"],
+        datePosted: "2026-10-19",
+        tags: ["career-quest", "job-search"],
+        stats: { newPeople: 3 }
+    },
+    {
+        id: "older-reel",
+        title: "An <older> reel",
+        instagram: "https://www.instagram.com/reel/DcjKo-giQjh/",
+        datePosted: "2026-08-27",
+        tags: ["job-search"]
+    },
+    {
+        id: "lecture",
+        title: "A lecture",
+        youtube: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        datePosted: "2026-11-01",
+        tags: ["ai"]
+    }
+];
+
+let dir;
+let out;
+let result;
+
+const read = (file) => fs.readFile(path.join(out, file), "utf8");
+
+before(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "cse-videos-"));
+    out = path.join(dir, "dist");
+    await fs.writeFile(path.join(dir, "videos.json"), JSON.stringify(VIDEOS));
+    await fs.writeFile(path.join(dir, "tags.json"), JSON.stringify({ ai: "AI", "career-quest": "Career Quest" }));
+
+    result = await build({
+        dataFile: path.join(dir, "videos.json"),
+        tagsFile: path.join(dir, "tags.json"),
+        outDir: out,
+        siteUrl: "https://byui-cse.github.io/cse-videos"
+    });
+});
+
+after(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+});
+
+describe("build", () => {
+    it("writes a page for the home list, the tags, every tag, and every video", async () => {
+        const files = [
+            "index.html",
+            "404.html",
+            "tags/index.html",
+            "tags/ai/index.html",
+            "tags/career-quest/index.html",
+            "tags/job-search/index.html",
+            "videos/sample-short/index.html",
+            "videos/older-reel/index.html",
+            "videos/lecture/index.html",
+            "css/main.css",
+            "js/main.js",
+            "js/search.js",
+            "data/videos.json"
+        ];
+
+        for (const file of files) {
+            await fs.access(path.join(out, file));
+        }
+
+        assert.deepEqual(
+            { videos: result.videos, tags: result.tags, pages: result.pages },
+            { videos: 3, tags: 3, pages: 9 }
+        );
+    });
+
+    it("warns about a video with no picture", () => {
+        assert.ok(result.warnings.some((warning) => warning.startsWith("older-reel has no picture")));
+    });
+
+    it("refuses bad data with every problem listed", async () => {
+        await fs.writeFile(path.join(dir, "bad.json"), JSON.stringify([{ id: "x" }]));
+        await assert.rejects(
+            build({ dataFile: path.join(dir, "bad.json"), tagsFile: path.join(dir, "tags.json"), outDir: path.join(dir, "bad-out") }),
+            /data\/videos\.json has 4 problems/
+        );
+    });
+
+    it("reads SITE_URL with or without the trailing slash", () => {
+        assert.equal(siteUrlFrom("https://byui-cse.github.io/cse-videos"), "https://byui-cse.github.io/cse-videos/");
+        assert.equal(siteUrlFrom(undefined), null);
+        assert.throws(() => siteUrlFrom("byui-cse.github.io"), /SITE_URL/);
+        assert.throws(() => siteUrlFrom("ftp://example.com/"), /SITE_URL/);
+    });
+});
+
+describe("home page", () => {
+    it("lists every video, newest first, with its search words", async () => {
+        const page = await read("index.html");
+        const order = [...page.matchAll(/href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+
+        assert.deepEqual(order, ["lecture", "sample-short", "older-reel"]);
+        assert.match(page, /data-search="[^"]*\bcareer\b[^"]*\bquest\b/);
+        assert.match(page, /data-order="0"/);
+    });
+
+    it("escapes titles", async () => {
+        const page = await read("index.html");
+        assert.ok(page.includes("An &lt;older&gt; reel"));
+        assert.ok(!page.includes("<older>"));
+    });
+
+    it("hides the search form until JavaScript can run it", async () => {
+        const page = await read("index.html");
+        assert.match(page, /<form class="search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
+        assert.match(page, /name="q"/);
+    });
+
+    it("links home with ./ so the site name and Videos link clear a search", async () => {
+        const page = await read("index.html");
+        assert.match(page, /<a class="brand" href="\.\/">/);
+        assert.match(page, /<a class="site-nav__link" href="\.\/" aria-current="page">Videos<\/a>/);
+        assert.ok(!page.includes('href=""'));
+    });
+
+    it("links each tag page", async () => {
+        const page = await read("index.html");
+        assert.match(page, /href="\.\/tags\/job-search\/">Job search</);
+        assert.match(page, /href="\.\/tags\/career-quest\/">Career Quest</);
+    });
+
+    it("has sharing details with full addresses", async () => {
+        const page = await read("index.html");
+        assert.match(page, /<link rel="canonical" href="https:\/\/byui-cse\.github\.io\/cse-videos\/">/);
+        assert.match(page, /<meta http-equiv="Content-Security-Policy"/);
+    });
+});
+
+describe("tag pages", () => {
+    it("list every tag with its count", async () => {
+        const page = await read("tags/index.html");
+        assert.match(page, /href="job-search\/">Job search<\/a>\s*<span class="tag-index__count">2 videos/);
+        assert.match(page, /href="ai\/">AI<\/a>\s*<span class="tag-index__count">1 video</);
+    });
+
+    it("show only the videos with that tag, newest first", async () => {
+        const page = await read("tags/job-search/index.html");
+        const order = [...page.matchAll(/href="\.\.\/\.\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+        assert.deepEqual(order, ["sample-short", "older-reel"]);
+        assert.match(page, /<h1 class="page-head__title" id="page-title">Job search<\/h1>/);
+    });
+
+    it("name the tag once on screen, with the list heading for screen readers", async () => {
+        const page = await read("tags/job-search/index.html");
+        assert.match(page, /<h2 class="visually-hidden" id="listing-heading" tabindex="-1">Videos tagged Job search<\/h2>/);
+        assert.ok(!page.includes("<p class=\"page-head__note\">Videos tagged"));
+    });
+
+    it("underline Tags in the header without calling the tag page the Tags page", async () => {
+        const page = await read("tags/job-search/index.html");
+        assert.match(page, /<a class="site-nav__link site-nav__link--section" href="\.\.\/\.\.\/tags\/">Tags<\/a>/);
+        assert.ok(!page.includes('aria-current="page"'));
+    });
+});
+
+describe("every page", () => {
+    it("tints the phone browser bar navy and preloads both fonts, like the CS & SE site", async () => {
+        for (const file of ["index.html", "tags/index.html", "videos/lecture/index.html", "404.html"]) {
+            const page = await read(file);
+            assert.match(page, /<meta name="theme-color" content="#004c86" media="\(prefers-color-scheme: light\)">/, file);
+            assert.match(page, /fonts\/source-sans-3-latin-wght-normal\.woff2" as="font"/, file);
+            assert.match(page, /fonts\/source-serif-4-latin-wght-normal\.woff2" as="font"/, file);
+        }
+    });
+});
+
+describe("video pages", () => {
+    it("play YouTube first and offer Instagram when there are both", async () => {
+        const page = await read("videos/sample-short/index.html");
+        assert.match(page, /<iframe class="player__iframe" src="https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?rel=0&amp;playsinline=1"/);
+        assert.match(page, /data-instagram-src="https:\/\/www\.instagram\.com\/p\/DZYXMdzMV0w\/embed\/"/);
+        assert.match(page, /data-youtube-shape="tall"/);
+        assert.match(page, /data-source-button="instagram" aria-pressed="false">Instagram</);
+    });
+
+    it("play Instagram when that is the only link, without a source switch", async () => {
+        const page = await read("videos/older-reel/index.html");
+        assert.match(page, /data-source="instagram"/);
+        assert.ok(!page.includes("data-source-button"));
+    });
+
+    it("show 16:9 videos as wide", async () => {
+        const page = await read("videos/lecture/index.html");
+        assert.match(page, /data-youtube-shape="wide"/);
+    });
+
+    it("keep the caption's paragraphs and line breaks, escaped", async () => {
+        const page = await read("videos/sample-short/index.html");
+        assert.match(page, /<p>First line<br>second line<\/p>/);
+        assert.match(page, /<p>A &lt;b&gt;bold&lt;\/b&gt; claim &amp; more<\/p>/);
+    });
+
+    it("show the date, length, tags, credits, and stats", async () => {
+        const page = await read("videos/sample-short/index.html");
+        assert.match(page, /<time datetime="2026-10-19">October 19, 2026<\/time>/);
+        assert.match(page, /<time datetime="PT1M5S"><span aria-hidden="true">1:05<\/span><span class="visually-hidden">1 minute 5 seconds<\/span><\/time>/);
+        assert.match(page, /href="\.\.\/\.\.\/tags\/career-quest\/">Career Quest</);
+        assert.match(page, /<li>Music from the Instagram library<\/li>/);
+        assert.match(page, /<li>Photo used under CC BY-SA 4\.0 \(<a href="https:\/\/creativecommons\.org\/licenses\/by-sa\/4\.0\/">https:\/\/creativecommons\.org\/licenses\/by-sa\/4\.0\/<\/a>\)<\/li>/);
+        assert.match(page, /<dt>New people<\/dt><dd>3<\/dd>/);
+    });
+
+    it("use the tall YouTube thumbnail for a Short with no cover file", async () => {
+        const page = await read("videos/sample-short/index.html");
+        assert.match(page, /<img class="player__poster" src="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/oar2\.jpg"/);
+    });
+
+    it("link the privacy notice and legal page in the footer", async () => {
+        const page = await read("videos/lecture/index.html");
+        assert.match(page, /href="https:\/\/cesprivacy\.org\/ces-institutions-privacy-notice">Privacy</);
+        assert.match(page, /href="https:\/\/www\.byui\.edu\/legal\/">Legal</);
+    });
+
+    it("link out to YouTube and Instagram", async () => {
+        const page = await read("videos/sample-short/index.html");
+        assert.match(page, /href="https:\/\/www\.youtube\.com\/shorts\/dQw4w9WgXcQ">Open on YouTube</);
+        assert.match(page, /href="https:\/\/www\.instagram\.com\/reel\/DZYXMdzMV0w\/">Open on Instagram</);
+    });
+
+    it("underline Videos in the header", async () => {
+        const page = await read("videos/lecture/index.html");
+        assert.match(page, /<a class="site-nav__link site-nav__link--section" href="\.\.\/\.\.\/">Videos<\/a>/);
+    });
+
+    it("use the YouTube thumbnail for the sharing preview when there is no cover file", async () => {
+        const page = await read("videos/lecture/index.html");
+        assert.match(page, /<meta property="og:image" content="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/hqdefault\.jpg">/);
+        assert.match(page, /<meta property="og:url" content="https:\/\/byui-cse\.github\.io\/cse-videos\/videos\/lecture\/">/);
+    });
+});
+
+describe("404 page", () => {
+    it("links from the site's root path, since it can be served at any depth", async () => {
+        const page = await read("404.html");
+        assert.match(page, /href="\/cse-videos\/">See all videos</);
+        assert.match(page, /<link rel="stylesheet" href="\/cse-videos\/css\/main\.css">/);
+        assert.match(page, /href="\/cse-videos\/tags\/">Tags</);
+        assert.ok(!page.includes("<base"));
+    });
+
+    it("keeps the skip link on the page", async () => {
+        const page = await read("404.html");
+        assert.match(page, /<a class="skip-link" href="#main">/);
+    });
+});

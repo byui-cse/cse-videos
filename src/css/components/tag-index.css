@@ -1,0 +1,53 @@
+/**
+ * The tag directory: one row per tag with its count, in columns, ruled like
+ * the career list on the CS & SE site.
+ */
+.tag-index {
+	columns: 16rem;
+	column-gap: var(--space-2xl);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border-block-start: 1px solid var(--color-line);
+}
+
+.tag-index__item {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-md);
+	padding-block: var(--space-sm);
+	border-block-end: 1px solid var(--color-line);
+	break-inside: avoid;
+
+	& + & {
+		margin: 0;
+	}
+}
+
+.tag-index__link {
+	font-family: var(--font-ui);
+	font-size: var(--text-body);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+
+	/* The whole row is the link. */
+	&::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+	}
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.tag-index__count {
+	flex: none;
+	color: var(--color-muted);
+	font-family: var(--font-ui);
+	font-size: var(--text-min);
+}

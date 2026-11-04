@@ -29,7 +29,12 @@ let queue = Promise.resolve();
 const rebuild = () => {
     queue = queue.then(async () => {
         try {
-            const { videos } = await build();
+            const { videos, warnings } = await build();
+
+            for (const warning of warnings) {
+                console.warn(`Warning: ${warning}`);
+            }
+
             console.log(`Built at ${new Date().toLocaleTimeString()} (${plural(videos, "video")})`);
         } catch (error) {
             console.error(error.message);
@@ -50,10 +55,12 @@ const send = (response, status, body, type = "text/plain; charset=utf-8") => {
 };
 
 const server = http.createServer(async (request, response) => {
+    let url;
     let pathname;
 
     try {
-        pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
+        url = new URL(request.url, "http://localhost");
+        pathname = decodeURIComponent(url.pathname);
     } catch {
         return send(response, 400, "Bad request");
     }
@@ -66,9 +73,12 @@ const server = http.createServer(async (request, response) => {
 
     try {
         if ((await fs.promises.stat(file)).isDirectory()) {
-            // Match GitHub Pages: folders need a trailing slash so relative links resolve.
+            // Match GitHub Pages: folders need a trailing slash so relative
+            // links resolve, and the query (like ?source=instagram) carries
+            // over. The still-encoded path can't start with // and send the
+            // browser to another site.
             if (!pathname.endsWith("/")) {
-                response.writeHead(301, { Location: `${pathname}/` });
+                response.writeHead(301, { Location: `${url.pathname}/${url.search}` });
                 return response.end();
             }
 
@@ -78,7 +88,12 @@ const server = http.createServer(async (request, response) => {
         const body = await fs.promises.readFile(file);
         send(response, 200, body, TYPES[path.extname(file)] ?? "application/octet-stream");
     } catch {
-        send(response, 404, "Not found");
+        // Match GitHub Pages: missing addresses get the site's 404 page.
+        try {
+            send(response, 404, await fs.promises.readFile(path.join(DIST, "404.html")), TYPES[".html"]);
+        } catch {
+            send(response, 404, "Not found");
+        }
     }
 });
 
