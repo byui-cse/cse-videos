@@ -58,15 +58,17 @@ export const listUrl = (href, query, order, defaultOrder = "newest") => {
 };
 
 /**
- * The results count: "36 videos", "5 of 36 videos match “port”", or
- * "No videos match “x”".
+ * The results count: "36 videos" (or the page's own words for the whole
+ * list, like "36 videos, 25 minutes in all"), "5 of 36 videos match “port”",
+ * or "No videos match “x”".
  * @param {number} shown
  * @param {number} total
  * @param {string} query
+ * @param {string} [rest] what to say with no search
  */
-export const countText = (shown, total, query) => {
+export const countText = (shown, total, query, rest) => {
     if (query === "") {
-        return plural(total, "video");
+        return rest || plural(total, "video");
     }
 
     return shown === 0 ? `No videos match “${query}”` : `${shown} of ${plural(total, "video")} match “${query}”`;

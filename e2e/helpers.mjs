@@ -8,7 +8,7 @@ import { build } from "../scripts/build.js";
 const types = {
     ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
     ".json": "application/json", ".jpg": "image/jpeg", ".png": "image/png",
-    ".svg": "image/svg+xml", ".woff2": "font/woff2"
+    ".svg": "image/svg+xml", ".woff2": "font/woff2", ".webp": "image/webp", ".avif": "image/avif"
 };
 
 export const videos = JSON.parse(await readFile(new URL("../data/videos.json", import.meta.url)));

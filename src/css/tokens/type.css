@@ -1,0 +1,19 @@
+/**
+ * Type: Sofia Sans Semi Condensed for display, Sofia Sans for text and UI.
+ * A perfect fourth from 16 px at 1440 and 1.2 from 16 px at 390, fluid
+ * between. Nothing under 16 px.
+ */
+:root {
+	--display: "Sofia Sans Semi Condensed", "Arial Narrow", Arial, sans-serif;
+	--text: "Sofia Sans", Arial, Helvetica, sans-serif;
+
+	--step-1: clamp(19px, 18.26px + 0.19vw, 21px);
+	--step-2: clamp(23px, 21.14px + 0.476vw, 28px);
+	--step-3: clamp(28px, 24.29px + 0.952vw, 38px);
+	--step-4: clamp(33px, 26.69px + 1.619vw, 50px);
+	--step-5: clamp(40px, 29.97px + 2.571vw, 67px);
+	--step-6: clamp(48px, 32.4px + 4vw, 90px);
+	--step-7: clamp(64px, 43.2px + 5.333vw, 120px);
+	--h1: clamp(33px, 20.37px + 3.238vw, 67px);
+	--strip-title: clamp(23px, 17.43px + 1.429vw, 38px);
+}

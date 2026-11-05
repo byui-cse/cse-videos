@@ -1,6 +1,8 @@
 /**
- * Link buttons share on phones and copy elsewhere. They use the page's
- * address as it is right now, including a search or chosen player.
+ * Link buttons share on phones and copy elsewhere. A page's own button
+ * ([data-copy-link]) uses the address as it is right now, including a search,
+ * order or chosen player; a button for another page ([data-copy], like Copy
+ * link under a still) uses the link it names.
  */
 import { shareMode } from "./state.js";
 
@@ -45,29 +47,85 @@ const copy = async (text) => {
     }
 };
 
+/**
+ * The hidden status line that tells screen readers what a button did: the
+ * one beside the page's own button, or one made for the page.
+ * @param {Element} button
+ * @returns {Element}
+ */
+const statusFor = (button) => {
+    const near = button.parentElement?.querySelector("[data-copy-status]");
+    const status = near ?? document.querySelector("[data-copy-status]");
+
+    if (status) {
+        return status;
+    }
+
+    const made = document.createElement("p");
+    made.className = "visually-hidden";
+    made.setAttribute("role", "status");
+    made.setAttribute("data-copy-status", "");
+    document.body.append(made);
+    return made;
+};
+
+/**
+ * The text node that holds a button's visible label.
+ * @param {HTMLElement} button
+ * @returns {ChildNode}
+ */
+const labelNode = (button) => {
+    const node = [...button.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim() !== "");
+
+    if (node) {
+        return node;
+    }
+
+    const made = document.createTextNode(button.textContent ?? "");
+    button.replaceChildren(made);
+    return made;
+};
+
 export const initShare = () => {
+    // A page built without its public address shows the one it was opened at.
+    for (const node of document.querySelectorAll("[data-page-url]")) {
+        if (!/^https?:/.test(node.textContent ?? "")) {
+            node.textContent = `${window.location.origin}${window.location.pathname}`;
+        }
+    }
+
     const mode = shareMode({
         canShare: typeof navigator.share === "function",
         coarsePointer: window.matchMedia?.("(pointer: coarse)")?.matches ?? false
     });
 
-    for (const button of document.querySelectorAll("[data-copy-link]")) {
-        const status = button.parentElement?.querySelector("[data-copy-status]");
-        const label = mode === "share" ? "Share" : button.textContent;
+    const buttons = /** @type {HTMLElement[]} */ ([...document.querySelectorAll("[data-copy-link], [data-copy]")]);
+
+    for (const button of buttons) {
+        const label = labelNode(button);
+        const restLabel = mode === "share" ? "Share" : label.textContent;
+        const suffix = button.querySelector("[data-copy-suffix]");
+        const name = button.getAttribute("data-copy-name");
         let timer;
 
-        button.textContent = label;
+        label.textContent = restLabel;
+
+        // "Copy link to X" reads as "Share X" once the button shares.
+        if (mode === "share" && suffix && name) {
+            suffix.textContent = ` ${name}`;
+        }
 
         button.addEventListener("click", async () => {
+            const target = button.hasAttribute("data-copy")
+                ? new URL(button.getAttribute("data-copy") ?? "", window.location.href).href
+                : window.location.href;
+            const status = statusFor(button);
             let message;
             let statusMessage;
 
             if (mode === "share") {
                 try {
-                    await navigator.share({
-                        title: document.querySelector("h1")?.textContent?.trim() || document.title,
-                        url: window.location.href
-                    });
+                    await navigator.share({ title: name ?? document.title, url: target });
                     message = "Link shared";
                     statusMessage = message;
                 } catch (error) {
@@ -78,26 +136,22 @@ export const initShare = () => {
             }
 
             if (!message) {
-                const copied = await copy(window.location.href);
+                const copied = await copy(target);
                 message = copied ? "Link copied" : "Copy failed";
-                statusMessage = copied ? message : "Couldn't copy. Copy the address from the address bar.";
+                statusMessage = copied
+                    ? message
+                    : button.hasAttribute("data-copy") ? "Couldn't copy the link." : "Couldn't copy. Copy the address from the address bar.";
             }
 
-            // The label says what happened, in place, so nothing shifts; the
-            // hidden status says it to screen readers.
-            button.textContent = message;
-
-            if (status) {
-                status.textContent = statusMessage;
-            }
+            // The label says what happened, in place; the hidden status says
+            // it to screen readers.
+            label.textContent = message;
+            status.textContent = statusMessage;
 
             clearTimeout(timer);
             timer = setTimeout(() => {
-                button.textContent = label;
-
-                if (status) {
-                    status.textContent = "";
-                }
+                label.textContent = restLabel;
+                status.textContent = "";
             }, 3000);
         });
     }

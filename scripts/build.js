@@ -1,7 +1,8 @@
 /**
  * Builds the site into dist/: copies src/, bundles the CSS into one file,
- * and writes a page for the home list, the tag list, every tag, and every
- * video. Run with `npm run build`.
+ * writes smaller AVIF and WebP copies of the covers, and writes a page for
+ * the home list, the topic list, every topic, and every video. Run with
+ * `npm run build`.
  *
  * Set SITE_URL (the deploy workflow does) to add full links for sharing
  * previews, like https://byui-cse.github.io/cse-videos/.
@@ -10,6 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
+import { writeCoverDerivatives } from "../lib/images.js";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
 import { robotsTxt, sitemapXml } from "../lib/seo.js";
 import { collectTags, plural } from "../lib/site.js";
@@ -97,7 +99,9 @@ export const build = async ({
         tags: collectTags(videos, names),
         names,
         covers,
-        siteUrl: siteUrlFrom(siteUrl)
+        siteUrl: siteUrlFrom(siteUrl),
+        // The modules js/main.js imports, preloaded on every page.
+        scripts: (await fs.readdir(path.join(srcDir, "js"))).filter((name) => name.endsWith(".js") && name !== "main.js").sort()
     };
 
     // Build into a staging folder and swap it in at the end, so the dev server
@@ -114,6 +118,8 @@ export const build = async ({
 
     const { code } = bundle({ filename: path.join(cssDir, "main.css"), minify: true, targets: TARGETS });
     await writeFile(path.join(staging, "css", "main.css"), code);
+
+    await writeCoverDerivatives({ covers, srcDir, outDir: staging });
 
     await writeFile(path.join(staging, "data", "videos.json"), JSON.stringify(videos));
     await writeFile(path.join(staging, "data", "tags.json"), JSON.stringify(names));

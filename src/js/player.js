@@ -59,6 +59,7 @@ export const initPlayer = () => {
     const available = Object.keys(sources).filter((key) => sources[key]);
     const sourceButtons = [...player.querySelectorAll("[data-source-button]")];
     const expandButton = /** @type {HTMLButtonElement | null} */ (player.querySelector("[data-expand]"));
+    const onlyLine = /** @type {HTMLElement | null} */ (player.querySelector("[data-only-on]"));
     const frame = iframe.parentElement;
     let status = /** @type {HTMLParagraphElement | null} */ (null);
     let note = /** @type {HTMLParagraphElement | null} */ (null);
@@ -141,8 +142,9 @@ export const initPlayer = () => {
     };
 
     /**
-     * "Only on Instagram" beside the controls when the viewer prefers the
-     * player this video doesn't have, so they know why it wasn't used.
+     * "Only on Instagram" above the video when the viewer prefers the player
+     * this video doesn't have, said to screen readers too, so they know why
+     * it wasn't used.
      * @param {string | null} preferred
      */
     const updateNote = (preferred) => {
@@ -153,12 +155,17 @@ export const initPlayer = () => {
             note.className = "player__note";
             note.setAttribute("data-player-note", "");
             note.setAttribute("role", "status");
-            (expandButton ?? frame)?.before(note);
+            (onlyLine ?? expandButton ?? frame)?.before(note);
         }
 
         if (note) {
             note.textContent = only ? `Only on ${NAMES[only]}` : "";
             note.hidden = !only;
+        }
+
+        // The page's own "Only on" line steps aside while the note says it.
+        if (onlyLine) {
+            onlyLine.hidden = Boolean(only);
         }
     };
 

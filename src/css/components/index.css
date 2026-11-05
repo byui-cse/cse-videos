@@ -1,0 +1,316 @@
+/**
+ * The index: every video in a six-column grid on paper, newest first, the
+ * newest drawn two by two. A section's heading row holds its title with a
+ * short line beside it, and for a list, the toolbar: order and a link to
+ * this exact view. Stills zoom a little inside a fixed frame when pointed
+ * at; the layout never moves.
+ */
+.index {
+	padding: 96px 0 128px;
+	background: var(--paper);
+}
+
+.index--tag {
+	padding: 72px 0 120px;
+}
+
+.section-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px 48px;
+	margin-bottom: 48px;
+}
+
+.section-head__intro {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 12px 40px;
+}
+
+.section-head__lede {
+	max-width: 60ch;
+	color: var(--muted);
+	font-size: var(--step-1);
+	line-height: 1.45;
+}
+
+.section-head__tools {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px 24px;
+}
+
+.sort {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 10px;
+	color: var(--muted);
+	font-weight: 600;
+}
+
+.sort__wrap {
+	position: relative;
+	display: inline-flex;
+	color: var(--ink);
+}
+
+.sort__wrap::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	right: 16px;
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: translateY(-70%) rotate(45deg);
+	pointer-events: none;
+}
+
+.sort__select {
+	min-height: 44px;
+	padding: 0 44px 0 14px;
+	border: 2px solid var(--muted);
+	border-radius: 4px;
+	background: var(--surface);
+	color: var(--ink);
+	font-weight: 600;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.sort__select:hover {
+	border-color: var(--blue);
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 40px 24px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.grid--parts {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.tile {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.tile__link {
+	display: flex;
+	flex-direction: column;
+	color: inherit;
+	text-decoration: none;
+}
+
+.tile__image {
+	display: block;
+	aspect-ratio: 480 / 750;
+	overflow: hidden;
+	border-radius: 0;
+	background: var(--tint);
+}
+
+.tile__title {
+	display: block;
+	padding-top: 12px;
+	color: var(--ink);
+	font-size: 18px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.tile__link:hover .tile__title,
+.tile__link:focus-visible .tile__title {
+	text-decoration: underline 2px;
+	text-underline-offset: 3px;
+}
+
+.tile__image img {
+	transition: transform 250ms var(--state);
+}
+
+.tile__link:hover .tile__image img,
+.tile__link:focus-visible .tile__image img {
+	transform: scale(1.04);
+}
+
+/* Every tile in a row is as tall as the row, and its date and Copy link sit
+   at the bottom, one under the other on every tile, so a row has one
+   baseline however its titles wrap. */
+.tile__line {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	margin-top: auto;
+	padding-top: 4px;
+}
+
+.tile__meta {
+	color: var(--muted);
+	font-size: 16px;
+	line-height: 1.3;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.tile__copy {
+	min-height: 44px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--link);
+	font-size: 16px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.tile__copy:hover {
+	text-decoration: underline 1px;
+	text-underline-offset: 3px;
+}
+
+.tile__now {
+	display: block;
+	margin-top: 6px;
+	color: var(--mark);
+	font-weight: 700;
+}
+
+.tile--current .tile__image {
+	outline: 3px solid var(--blue);
+	outline-offset: -3px;
+}
+
+/* The newest reel is the index's one change of scale: it fills two columns
+   by two rows. */
+.grid > .tile--lead {
+	grid-column: span 2;
+	grid-row: span 2;
+}
+
+.tile--lead .tile__title {
+	padding-top: 16px;
+	font-family: var(--display);
+	font-size: var(--step-3);
+	font-weight: 800;
+	line-height: 1.12;
+	letter-spacing: -0.015em;
+}
+
+/* Its date and Copy link sit on the second row's line, so the cell is
+   filled to the same foot as the tiles beside it. */
+.tile--lead .tile__line {
+	padding-top: 8px;
+}
+
+/* On a phone the index opens on its first videos; the rest wait for "Show
+   all", which only a phone shows. */
+.index__more {
+	display: none;
+}
+
+.no-cover {
+	display: grid;
+	place-items: center;
+	height: 100%;
+	padding: 12px;
+	color: var(--muted);
+	font-weight: 600;
+	text-align: center;
+}
+
+.empty {
+	max-width: 60ch;
+	padding: 24px 0 8px;
+	font-size: var(--step-1);
+	line-height: 1.45;
+}
+
+.empty p {
+	margin-bottom: 16px;
+}
+
+.empty__line {
+	font-family: var(--display);
+	font-size: var(--step-3);
+	font-weight: 800;
+	line-height: 1.12;
+	letter-spacing: -0.015em;
+}
+
+.more {
+	padding: 96px 0 112px;
+	border-top: 1px solid var(--line);
+	background: var(--surface);
+}
+
+.more .section-title--small {
+	margin-bottom: 40px;
+}
+
+.more--series {
+	padding: 88px 0 96px;
+	background: var(--tint);
+}
+
+@media (max-width: 1099px) {
+	.grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.grid--parts {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 699px) {
+	.index {
+		padding: 64px 0 96px;
+	}
+
+	.index--tag {
+		padding: 48px 0 88px;
+	}
+
+	.section-head {
+		align-items: flex-start;
+		margin-bottom: 36px;
+	}
+
+	.grid,
+	.grid--parts {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 28px 12px;
+	}
+
+	.tile__title {
+		font-size: 17px;
+	}
+
+	.tile--folded {
+		display: none;
+	}
+
+	.index__more {
+		display: block;
+		margin-top: 32px;
+	}
+
+	.more {
+		padding: 64px 0 80px;
+	}
+}

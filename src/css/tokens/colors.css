@@ -1,65 +1,53 @@
 /**
- * Color tokens, copied from the CS & SE site (byui-cse/byui-cse.github.io,
- * src/cs-se/css/tokens) so both sites share one palette. Dark values apply when
- * the operating system prefers dark.
+ * Colors: the CS & SE palette. BYU-I blue for the utility bar and footer,
+ * band navy and band-deep for the strip, the player and Career Quest, white
+ * for the masthead and sections, warm paper under the stills. Gold has three
+ * meanings and is never a ground or used on white: matches your search,
+ * the player you are watching on, and lit. Dark values follow the OS.
  */
 :root {
-	color-scheme: light;
-	--color-paper: #fdfaf4;
-	--color-surface: #fffefd;
-	--color-tint: #f4f0e6;
-	--color-ink: #1d252d;
-	--color-muted: #525c66;
-	--color-link: #0069b6;
-	--color-link-hover: #005290;
-	--color-line: #d4d9df;
-	--color-border: #89939e;
-	--color-brand: #0065b0;
-	--color-brand-hover: #00518f;
-	--color-on-brand: #fcfcfc;
-	--color-band: #004c86;
-	--color-band-deep: #003763;
-	--color-on-band: #f9fcff;
-	--color-on-band-muted: #b5c5d6;
-	--color-band-accent: #f8ca65;
-	--color-focus: #ca6800;
-	--photo-brightness: 1.000;
+	color-scheme: light dark;
+	--blue: #0065b0;
+	--band: #004c86;
+	--band-deep: #003763;
+	--gold: #f8ca65;
+	--ink: #1d252d;
+	--paper: #fdfaf4;
+	--surface: #fffefd;
+	--tint: #f4f0e6;
+	--muted: #525c66;
+	--line: #d4d9df;
+	--link: #0069b6;
+	--on-band-muted: #b5c5d6;
+	--on-blue-muted: #e3ecf5;
+	--legal: #1d252d;
+	--legal-text: #c9d1d9;
+	--wordmark: #004c86;
+	--mark: #0065b0;
+	--focus: #ca6800;
+	--focus-on-band: #d0901e;
+	--photo-brightness: 1;
+	--veil: rgb(0 55 99 / 45%);
+	--light-button: #fff;
+	--light-button-hover: #e8f0f8;
+	--light-button-ink: #0065b0;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		color-scheme: dark;
-		--color-paper: #19222f;
-		--color-surface: #232c3a;
-		--color-tint: #1f2836;
-		--color-ink: #d9dfe5;
-		--color-muted: #a0abb6;
-		--color-link: #5c9fe1;
-		--color-link-hover: #64b2ff;
-		--color-line: #34393d;
-		--color-border: #6b7580;
-		--color-brand: #0065b0;
-		--color-brand-hover: #00518f;
-		--color-on-brand: #fcfcfc;
-		--color-band: #002647;
-		--color-band-deep: #001b36;
-		--color-on-band: #f9fcff;
-		--color-on-band-muted: #8595a5;
-		--color-band-accent: #f8ca65;
-		--color-focus: #d0901e;
-		--photo-brightness: 0.870;
-	}
-}
-
-:root {
-	--shadow-color: rgb(10 20 35 / 0.14);
-	--shadow-sm: 0 1px 2px var(--shadow-color);
-	--shadow-md: 0 0.5rem 1.5rem var(--shadow-color);
-	--shadow-lg: 0 1.25rem 3.5rem var(--shadow-color);
-}
-
-@media (prefers-color-scheme: dark) {
-	:root {
-		--shadow-color: rgb(0 0 0 / 0.45);
+		--paper: #19222f;
+		--surface: #19222f;
+		--tint: #212c3a;
+		--ink: #d9dfe5;
+		--muted: #a0abb6;
+		--line: #334152;
+		--link: #5c9fe1;
+		--band: #002647;
+		--band-deep: #001b36;
+		--wordmark: #d9dfe5;
+		--mark: #5c9fe1;
+		--focus: #d0901e;
+		--photo-brightness: 0.87;
+		--veil: rgb(0 27 54 / 50%);
 	}
 }

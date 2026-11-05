@@ -1,0 +1,57 @@
+/**
+ * Element type and the shared section heading. Display type in the semi
+ * condensed cut at weight 800; running text in Sofia Sans.
+ */
+h1,
+h2,
+h3,
+p {
+	margin: 0;
+	overflow-wrap: break-word;
+}
+
+a {
+	color: var(--link);
+	text-underline-offset: 3px;
+}
+
+time {
+	font-variant-numeric: tabular-nums;
+}
+
+.section-title {
+	color: var(--ink);
+	font-family: var(--display);
+	font-size: var(--step-4);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+}
+
+.section-title:focus {
+	outline: none;
+}
+
+.section-title--small {
+	font-size: var(--step-3);
+	line-height: 1.12;
+	letter-spacing: -0.015em;
+}
+
+/* Running prose, like a caption: a readable measure, links that break. */
+.prose p {
+	max-width: 60ch;
+	margin: 0 0 16px;
+	font-size: var(--step-1);
+	line-height: 1.45;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 699px) {
+	/* Section titles a step under the strip's headline on a phone. */
+	.section-title {
+		font-size: 28px;
+		line-height: 1.12;
+		letter-spacing: -0.01em;
+	}
+}

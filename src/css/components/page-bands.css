@@ -1,0 +1,104 @@
+/**
+ * The navy heads of the other pages: the topics page's band, a topic's short
+ * head (its name, count, running time and Copy link), and the missing page.
+ */
+.page-band,
+.tag-hero,
+.missing {
+	background: var(--band-deep);
+	color: #fff;
+}
+
+.page-band {
+	padding: 80px 0 64px;
+}
+
+.page-band__title {
+	font-family: var(--display);
+	font-size: var(--step-6);
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: -0.03em;
+}
+
+.page-band__meta {
+	margin-top: 16px;
+	color: var(--on-band-muted);
+	font-size: var(--step-1);
+}
+
+.tag-hero {
+	padding: 64px 0 48px;
+}
+
+.page-band :focus-visible,
+.tag-hero :focus-visible,
+.missing :focus-visible {
+	outline-color: var(--focus-on-band);
+}
+
+.tag-hero__inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 24px 48px;
+}
+
+.tag-hero__crumb {
+	margin-bottom: 8px;
+	font-size: var(--step-1);
+}
+
+.tag-hero__crumb a {
+	color: var(--on-band-muted);
+}
+
+.tag-hero__title {
+	font-family: var(--display);
+	font-size: var(--h1);
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: -0.025em;
+}
+
+.tag-hero__facts {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px 24px;
+}
+
+.tag-hero__count {
+	color: var(--on-band-muted);
+	font-size: var(--step-1);
+	font-variant-numeric: tabular-nums;
+}
+
+.missing {
+	padding: 128px 0 160px;
+}
+
+.missing__line {
+	max-width: 22ch;
+	margin-bottom: 32px;
+	font-family: var(--display);
+	font-size: var(--step-4);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+}
+
+@media (max-width: 699px) {
+	.page-band {
+		padding: 56px 0 48px;
+	}
+
+	.tag-hero {
+		padding: 40px 0 32px;
+	}
+
+	.missing {
+		padding: 88px 0 112px;
+	}
+}

@@ -1,28 +1,33 @@
 /**
- * CSE Videos stylesheet. Tokens, base styles, buttons, and the band, card and
- * list patterns follow the CS & SE site; the video components are this site's own.
+ * CSE Videos stylesheet: the wall design. BYU-Idaho blue utility bar over a
+ * white masthead, a wall of reel stills under a slim navy strip, square
+ * stills, 4 px corners on controls, Sofia Sans and Sofia Sans Semi Condensed.
+ * The CS & SE colors; nothing else of that site.
  * Layers: tokens → base → layout → components → utilities.
  */
 @layer tokens, base, layout, components, utilities;
 
 @import "./tokens/colors.css" layer(tokens);
-@import "./tokens/typography.css" layer(tokens);
-@import "./tokens/spacing.css" layer(tokens);
+@import "./tokens/type.css" layer(tokens);
+@import "./tokens/space.css" layer(tokens);
 
 @import "./base/fonts.css" layer(base);
 @import "./base/reset.css" layer(base);
-@import "./base/typography.css" layer(base);
+@import "./base/type.css" layer(base);
 
-@import "./layout/layout.css" layer(layout);
+@import "./layout/container.css" layer(layout);
 @import "./layout/header.css" layer(layout);
 @import "./layout/footer.css" layer(layout);
 
-@import "./components/button.css" layer(components);
-@import "./components/chips.css" layer(components);
-@import "./components/intro.css" layer(components);
-@import "./components/listing.css" layer(components);
-@import "./components/tag-index.css" layer(components);
+@import "./components/buttons.css" layer(components);
+@import "./components/source-preference.css" layer(components);
+@import "./components/wall.css" layer(components);
+@import "./components/index.css" layer(components);
+@import "./components/topics.css" layer(components);
+@import "./components/quest.css" layer(components);
 @import "./components/player.css" layer(components);
-@import "./components/video-page.css" layer(components);
+@import "./components/record.css" layer(components);
+@import "./components/page-bands.css" layer(components);
 
 @import "./utilities/helpers.css" layer(utilities);
+@import "./utilities/motion.css" layer(utilities);

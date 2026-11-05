@@ -45,6 +45,8 @@ describe("list address", () => {
         assert.equal(countText(1, 1, ""), "1 video");
         assert.equal(countText(5, 36, "port"), "5 of 36 videos match “port”");
         assert.equal(countText(0, 36, "zzz"), "No videos match “zzz”");
+        assert.equal(countText(36, 36, "", "36 videos, 25 minutes in all"), "36 videos, 25 minutes in all");
+        assert.equal(countText(5, 36, "port", "36 videos, 25 minutes in all"), "5 of 36 videos match “port”");
         assert.equal(plural(2, "tag"), "2 tags");
     });
 });

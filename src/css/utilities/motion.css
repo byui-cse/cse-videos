@@ -1,0 +1,71 @@
+/**
+ * The calm motion. On load the wall and its strip fade in once (300 ms) and
+ * the line rises 10 px (360 ms). The still that was clicked travels into the
+ * next page's player (300 ms), a response to a click. The wall's drift and
+ * Career Quest's single reveal are in src/js/motion.js. Under reduced motion
+ * none of that plays and no still zooms, lifts or slides; the short fades
+ * that answer a pointer or a search (the veil, the gold edge, the caption)
+ * stay, since they don't move anything.
+ */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes rise {
+	from {
+		transform: translateY(10px);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.wall,
+	.band {
+		animation: fade-in 300ms var(--state) both;
+	}
+
+	.band__title {
+		animation: rise 360ms var(--state) both;
+	}
+
+	@view-transition {
+		navigation: auto;
+	}
+
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation-duration: 300ms;
+		animation-timing-function: var(--state);
+	}
+
+	/* The clicked still and the next page's player share one name. */
+	.player__frame,
+	.is-reel {
+		view-transition-name: reel;
+	}
+
+	.is-reel-leaving .player__frame {
+		view-transition-name: none;
+	}
+}
+
+/* Career Quest waits, unseen, until it scrolls in (src/js/motion.js). */
+.quest__boards.is-waiting > * {
+	opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tile__link:hover .tile__image img,
+	.tile__link:focus-visible .tile__image img,
+	.topic:hover .topic__image img,
+	.topic:focus-within .topic__image img,
+	.topic-row:hover .topic-row__image img,
+	.topic-row:focus-within .topic-row__image img,
+	.board__link:hover .board__image,
+	.board__link:focus-visible .board__image,
+	.wall__caption {
+		transform: none;
+	}
+}

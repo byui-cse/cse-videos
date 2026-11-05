@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, describe, test } from "node:test";
 import { smartQuotes } from "../lib/html.js";
+import { libraryLine } from "../lib/site.js";
 import { instagramCode } from "../lib/videos.js";
 import { startSite, tagNames, videos } from "./helpers.mjs";
 
@@ -27,7 +28,7 @@ test("home lists every video and its total", async (t) => {
     const { page } = await site.page(t);
     await page.goto("/");
     assert.deepEqual(await ids(page), expectedIds(videos));
-    assert.equal(await page.locator("[data-results]").textContent(), `${videos.length} videos`);
+    assert.equal(await page.locator("[data-results]").textContent(), libraryLine(videos));
 });
 
 test("typing filters, updates the address, and Enter focuses the heading", async (t) => {
@@ -49,23 +50,26 @@ test("deep links restore search and order through directory redirects", async (t
     const { page } = await site.page(t);
     await page.goto("/?q=portfolio&sort=oldest");
     assert.equal(await page.getByRole("searchbox").inputValue(), "portfolio");
-    assert.equal(await page.getByRole("combobox", { name: "Sort" }).inputValue(), "oldest");
+    assert.equal(await page.getByRole("combobox", { name: "Order" }).inputValue(), "oldest");
     const order = await cards(page).evaluateAll((items) => items.map((item) => Number(item.dataset.order)));
     assert.ok(order.length > 1 && order.length < videos.length);
     assert.deepEqual(order, [...order].sort((a, b) => b - a));
 
-    // The series tag page opens oldest first, so ?sort=oldest is its plain address.
-    await page.goto(`/tags/${seriesTag}?sort=oldest`);
-    assert.equal(new URL(page.url()).pathname, `/tags/${seriesTag}/`);
-    assert.equal(new URL(page.url()).search, "");
-    assert.equal(await page.getByRole("combobox", { name: "Sort" }).inputValue(), "oldest");
-    assert.deepEqual(await shownIds(page), partOrder);
+    // A topic page keeps its order in the address too.
+    await page.goto("/tags/portfolio?sort=oldest");
+    assert.equal(new URL(page.url()).pathname, "/tags/portfolio/");
+    assert.equal(new URL(page.url()).search, "?sort=oldest");
+    assert.equal(await page.getByRole("combobox", { name: "Order" }).inputValue(), "oldest");
+    assert.equal(await page.getByRole("heading", { level: 2 }).first().textContent(), "Oldest first");
 
-    await page.goto(`/tags/${seriesTag}?sort=newest`);
-    assert.equal(new URL(page.url()).pathname, `/tags/${seriesTag}/`);
-    assert.equal(new URL(page.url()).search, "?sort=newest");
-    assert.equal(await page.getByRole("combobox", { name: "Sort" }).inputValue(), "newest");
-    assert.deepEqual(await shownIds(page), [...partOrder].reverse());
+    // The series is always in part order: no order menu, and a ?sort= is dropped.
+    for (const sort of ["oldest", "newest"]) {
+        await page.goto(`/tags/${seriesTag}?sort=${sort}`);
+        assert.equal(new URL(page.url()).pathname, `/tags/${seriesTag}/`);
+        assert.equal(new URL(page.url()).search, "", sort);
+        assert.equal(await page.getByRole("combobox").count(), 0, sort);
+        assert.deepEqual(await shownIds(page), partOrder, sort);
+    }
 });
 
 test("the series tag page starts at Part 1 with and without JavaScript", async (t) => {
@@ -89,7 +93,7 @@ test("clearing the input and the empty-results link restore all videos", async (
     await page.locator("[data-clear-search]").click();
     assert.equal(await input.inputValue(), "");
     assert.deepEqual(await ids(page), expectedIds(videos));
-    assert.equal(await page.locator("[data-results]").textContent(), `${videos.length} videos`);
+    assert.equal(await page.locator("[data-results]").textContent(), libraryLine(videos));
     assert.equal(new URL(page.url()).searchParams.has("q"), false);
 });
 
@@ -136,6 +140,12 @@ test("Instagram embed expands as a modal and Escape restores focus", async (t) =
             const focused = document.activeElement;
             return focused === null || focused === document.body || document.querySelector("[data-player]").contains(focused);
         }), true, "focus reached the page behind the open player");
+    }
+    // Close comes before the video, so Tab can leave focus inside the
+    // cross-origin frame, where no page sees Escape. Tab on to Close.
+    const close = page.getByRole("button", { name: "Close", exact: true });
+    for (let step = 0; step < 5 && !(await close.evaluate((node) => node === document.activeElement)); step++) {
+        await page.keyboard.press("Tab");
     }
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("dialog").count(), 0);
@@ -336,7 +346,8 @@ test("unknown paths serve the 404 page with a working home link", async (t) => {
     const { page } = await site.page(t);
     const response = await page.goto("/missing/nested/page");
     assert.equal(response.status(), 404);
-    assert.equal(await page.getByRole("heading", { name: "Page not found" }).count(), 1);
+    assert.equal(await page.getByRole("heading", { name: "This address doesn’t go to a video or a tag" }).count(), 1);
+    assert.equal(await page.title(), "Page not found | CSE Videos");
     await page.getByRole("link", { name: "See all videos", exact: true }).click();
     assert.equal(page.url(), `${site.origin}/`);
 });
@@ -369,6 +380,184 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }
         });
     }
 }
+
+test("a still on the wall is a link that lights up and shows its title on hover", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/");
+    const wall = page.locator("[data-wall]");
+    assert.equal(await wall.locator("a").count(), videos.length);
+    const still = wall.locator("[data-id]").first();
+    const caption = still.locator(".wall__caption");
+    const id = await still.getAttribute("data-id");
+    assert.equal(await caption.textContent(), smartQuotes(videos.find((item) => item.id === id).title));
+    assert.equal(await caption.evaluate((node) => getComputedStyle(node).opacity), "0");
+
+    await still.hover();
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await caption.elementHandle());
+    assert.equal(await still.locator(".wall__veil").evaluate((node) => getComputedStyle(node).opacity), "0");
+
+    await page.mouse.move(0, 0);
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await caption.elementHandle());
+    await still.locator("a").click();
+    await page.waitForURL(`**/videos/${id}/`);
+});
+
+test("the wall stays out of the keyboard's way: tabbing from the search goes to the index", async (t) => {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/");
+        assert.equal(await page.getByRole("list", { name: /wall/i }).count(), 0);
+        assert.equal(await page.locator("[data-wall] a").evaluateAll((links) => links.every((link) => link.tabIndex === -1)), true);
+
+        await page.getByRole("searchbox", { name: "Search videos" }).focus();
+        await page.keyboard.press("Tab");
+        assert.equal(await page.evaluate(() => document.querySelector("#all-videos").contains(document.activeElement)), true, `${viewport.width}: focus left the index`);
+        for (let step = 0; step < 6; step++) {
+            await page.keyboard.press("Tab");
+        }
+
+        const hero = await page.locator(".hero").evaluate((node) => ({ scrollTop: node.scrollTop, bottom: node.getBoundingClientRect().bottom }));
+        assert.equal(hero.scrollTop, 0, `${viewport.width}`);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const band = await page.locator(".band").boundingBox();
+        const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+        assert.ok(band.y >= 0 && band.y + band.height <= viewport.height + 1, `${viewport.width}: the band is on screen`);
+        assert.ok(title.y >= band.y && title.y + title.height <= band.y + band.height, `${viewport.width}: the headline is in the band`);
+    }
+});
+
+test("clicking through the site raises no errors, view transitions included", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(`${new URL(page.url()).pathname}: ${error.message}`));
+    const settle = () => page.waitForTimeout(450);
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "Topics", exact: true }).first().click();
+    await page.waitForURL("**/tags/");
+    await settle();
+    await page.getByRole("main").getByRole("link", { name: tagNames[seriesTag], exact: true }).click();
+    await page.waitForURL(`**/tags/${seriesTag}/`);
+    await settle();
+    await cards(page).first().getByRole("link").click();
+    await page.waitForURL(`**/videos/${partOrder[0]}/`);
+    await settle();
+    await page.locator("[data-back]").click();
+    await page.waitForURL(`**/tags/${seriesTag}/`);
+    await settle();
+    await page.getByRole("link", { name: "CSE Videos" }).first().click();
+    await page.waitForURL(`${site.origin}/`);
+    await settle();
+    await page.locator("[data-wall] a").nth(2).click();
+    await page.waitForURL(/\/videos\/[\w-]+\/$/);
+    await settle();
+    await page.goBack();
+    await page.waitForURL(`${site.origin}/`);
+    await settle();
+    assert.deepEqual(errors, []);
+});
+
+test("on a phone the index opens on twelve videos, and a search still looks through all of them", async (t) => {
+    const viewport = { width: 390, height: 844 };
+    const { page } = await site.page(t, { viewport });
+    await page.goto("/");
+    assert.equal(await cards(page).count(), 12);
+    const showAll = page.getByRole("button", { name: `Show all ${videos.length} videos` });
+    await showAll.click();
+    assert.equal(await cards(page).count(), videos.length);
+    assert.equal(await showAll.isVisible(), false);
+    assert.equal(await page.evaluate(() => document.activeElement.closest("[data-video-list] > li") === document.querySelectorAll("[data-video-list] > li")[12]), true);
+
+    await page.goto("/");
+    const input = page.getByRole("searchbox", { name: "Search videos" });
+    assert.equal(await input.getAttribute("placeholder"), "Try portfolio or interviews");
+    await input.fill("job");
+    const expected = await page.locator("[data-video-list] > li").evaluateAll((items) => items.filter((item) =>
+        item.dataset.search.split(" ").some((word) => word.startsWith("job"))).length);
+    assert.ok(expected > 12, String(expected));
+    assert.equal(await cards(page).count(), expected);
+    await input.fill("");
+    assert.equal(await cards(page).count(), 12);
+
+    for (const javaScriptEnabled of [false]) {
+        const { page: plain } = await site.page(t, { viewport, javaScriptEnabled });
+        await plain.goto("/");
+        assert.equal(await cards(plain).count(), videos.length);
+    }
+
+    const { page: wide } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await wide.goto("/");
+    assert.equal(await cards(wide).count(), videos.length);
+    assert.equal(await wide.getByRole("button", { name: /^Show all/ }).count(), 0);
+    assert.equal(await wide.getByRole("searchbox").getAttribute("placeholder"), "Try portfolio, interviews or internships");
+});
+
+test("a search lights its stills on the wall and closes up the index", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/");
+    const firstBox = await cards(page).nth(1).boundingBox();
+    await page.getByRole("searchbox", { name: "Search videos" }).fill("portfolio");
+    const shown = await shownIds(page);
+    assert.ok(shown.length > 0 && shown.length < videos.length);
+    const lit = await page.locator("[data-wall] .is-match").evaluateAll((items) => items.map((item) => item.dataset.id));
+    assert.deepEqual(lit.sort(), [...shown].sort());
+    assert.equal(await page.locator("[data-wall] .is-dim").count(), videos.length - shown.length);
+    // The first match is drawn large; the second sits where the second tile was.
+    assert.equal(await cards(page).first().evaluate((item) => item.classList.contains("tile--lead")), true);
+    await page.waitForFunction(() => document.querySelector("[data-video-list]").getAnimations({ subtree: true }).length === 0);
+    const secondBox = await cards(page).nth(1).boundingBox();
+    assert.deepEqual([secondBox.x, secondBox.y], [firstBox.x, firstBox.y]);
+    assert.equal(await page.locator("[data-wall] .is-match .wall__edge").first().evaluate((node) => getComputedStyle(node).opacity), "1");
+
+    await page.getByRole("searchbox").fill("");
+    assert.equal(await page.locator("[data-wall] .is-match, [data-wall] .is-dim").count(), 0);
+});
+
+test("the wall drifts and Career Quest fades up once, under the page's content security policy", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.addInitScript(() => {
+        window.violations = [];
+        document.addEventListener("securitypolicyviolation", (event) => {
+            window.violations.push(`${event.violatedDirective} ${event.blockedURI}`);
+        });
+    });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/");
+    const wall = page.locator("[data-wall]");
+    assert.equal(await wall.evaluate((node) => node.style.transform), "");
+    const boards = page.locator("[data-quest-boards]");
+    assert.equal(await boards.evaluate((node) => node.classList.contains("is-waiting")), true);
+
+    await page.mouse.wheel(0, 400);
+    await page.waitForFunction(() => document.querySelector("[data-wall]").style.transform !== "");
+    const y = await wall.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m42);
+    assert.ok(Math.abs(y - 0.08 * await page.evaluate(() => window.scrollY)) < 1, String(y));
+
+    await boards.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => !document.querySelector("[data-quest-boards]").classList.contains("is-waiting"));
+    await page.waitForFunction(() => document.querySelector("[data-quest-boards]").getAnimations({ subtree: true }).length === 0);
+    assert.equal(await boards.locator("li").first().evaluate((node) => getComputedStyle(node).opacity), "1");
+
+    assert.deepEqual(await page.evaluate(() => window.violations), []);
+    assert.deepEqual(errors, []);
+});
+
+test("with reduced motion nothing drifts, waits or zooms, and every still is in place", async (t) => {
+    const { page } = await site.page(t, { reducedMotion: "reduce", viewport: { width: 1440, height: 900 } });
+    await page.goto("/");
+    await page.mouse.wheel(0, 400);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator("[data-wall]").evaluate((node) => node.style.transform), "");
+    assert.equal(await page.locator("[data-quest-boards].is-waiting").count(), 0);
+    assert.equal(await page.locator(".wall").evaluate((node) => getComputedStyle(node).animationName), "none");
+    const tile = cards(page).nth(1);
+    await tile.getByRole("link").hover();
+    assert.equal(await tile.locator("img").evaluate((node) => getComputedStyle(node).transform), "none");
+    // The fades that answer a pointer or a search stay; only movement goes.
+    assert.equal(await page.locator(".wall__veil").first().evaluate((node) => getComputedStyle(node).transitionDuration), "0.18s");
+    assert.equal(await page.locator(".wall__caption").first().evaluate((node) => getComputedStyle(node).transform), "none");
+});
 
 test("the real data has no video on both players, so the header has no player switch", async (t) => {
     const { page } = await site.page(t);

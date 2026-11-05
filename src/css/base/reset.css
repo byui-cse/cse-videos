@@ -1,5 +1,5 @@
 /**
- * Slim reset: box model, media, focus, reduced motion.
+ * Slim reset: box model, media, form controls, focus.
  */
 *,
 *::before,
@@ -10,41 +10,40 @@
 html {
 	-webkit-text-size-adjust: 100%;
 	text-size-adjust: 100%;
-	scroll-padding-top: calc(var(--header-h) + 1rem);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-	html {
-		scroll-behavior: smooth;
-	}
+	scroll-padding-top: 16px;
 }
 
 body {
 	margin: 0;
 	/* No minimum width: with a large default font or page zoom on a phone, a
 	   minimum forces a sideways scroll. Layouts wrap instead. */
-	min-height: 100dvh;
-	background-color: var(--color-paper);
-	color: var(--color-ink);
-	font-family: var(--font-body);
-	font-size: var(--text-body);
-	line-height: var(--leading-body);
-	text-rendering: optimizeLegibility;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--text);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.6;
 	-webkit-font-smoothing: antialiased;
-	transition: background-color var(--base) var(--ease), color var(--base) var(--ease);
 }
 
-img,
-picture,
-video,
-svg {
+img {
 	display: block;
 	max-width: 100%;
 	height: auto;
 }
 
-img {
-	filter: brightness(var(--photo-brightness, 1));
+picture {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* Stills fill their frame and keep their shape. */
+picture img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	filter: brightness(var(--photo-brightness));
 }
 
 iframe {
@@ -54,24 +53,11 @@ iframe {
 
 button,
 input,
-select,
-textarea {
+select {
 	font: inherit;
-	color: inherit;
 }
 
 :focus-visible {
-	outline: 3px solid var(--color-focus);
+	outline: 3px solid var(--focus);
 	outline-offset: 3px;
-	border-radius: var(--radius-sm);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-	}
 }
