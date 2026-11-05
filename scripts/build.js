@@ -12,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
 import { robotsTxt, sitemapXml } from "../lib/seo.js";
-import { collectTags, newestFirst, plural } from "../lib/site.js";
+import { collectTags, plural } from "../lib/site.js";
 import { checkCovers, loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
 
 export { plural };
@@ -139,15 +139,14 @@ export const build = async ({
     await writeFile(path.join(staging, "robots.txt"), robotsTxt(site.siteUrl));
 
     if (site.siteUrl) {
-        const newestDate = newestFirst(videos)[0]?.datePosted;
+        // No lastmod: a posting date isn't when a page last changed (an edited
+        // title or tag changes pages without moving it), and a wrong lastmod is
+        // worse than none.
         const entries = [
-            { url: site.siteUrl, lastmod: newestDate },
-            { url: `${site.siteUrl}tags/`, lastmod: newestDate },
-            ...site.tags.map((tag) => ({
-                url: `${site.siteUrl}tags/${tag.slug}/`,
-                lastmod: newestFirst(videos.filter((video) => video.tags.includes(tag.slug)))[0]?.datePosted
-            })),
-            ...videos.map((video) => ({ url: `${site.siteUrl}videos/${video.id}/`, lastmod: video.datePosted }))
+            { url: site.siteUrl },
+            { url: `${site.siteUrl}tags/` },
+            ...site.tags.map((tag) => ({ url: `${site.siteUrl}tags/${tag.slug}/` })),
+            ...videos.map((video) => ({ url: `${site.siteUrl}videos/${video.id}/` }))
         ];
         await writeFile(path.join(staging, "sitemap.xml"), sitemapXml(entries));
     }

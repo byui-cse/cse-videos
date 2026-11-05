@@ -118,7 +118,7 @@ describe("build", () => {
         assert.throws(() => siteUrlFrom("ftp://example.com/"), /SITE_URL/);
     });
 
-    it("writes a sitemap for every public page with the newest list dates", async () => {
+    it("writes a sitemap for every public page, without lastmod dates", async () => {
         const xml = await read("sitemap.xml");
         const base = "https://byui-cse.github.io/cse-videos/";
         const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
@@ -133,9 +133,7 @@ describe("build", () => {
             `${base}videos/older-reel/`,
             `${base}videos/lecture/`
         ]);
-        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/<\/loc><lastmod>2026-11-01<\/lastmod>/);
-        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/tags\/job-search\/<\/loc><lastmod>2026-10-19<\/lastmod>/);
-        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/videos\/older-reel\/<\/loc><lastmod>2026-08-27<\/lastmod>/);
+        assert.equal(xml.includes("<lastmod>"), false);
         assert.equal(xml.match(/<url>/g)?.length, 8);
     });
 
@@ -376,6 +374,14 @@ describe("video text hygiene", () => {
 
     it("uses real cover dimensions for cards and sharing metadata", async () => {
         const page = await read("videos/older-reel/index.html");
+        const cover = "https://byui-cse.github.io/cse-videos/covers/older-reel.jpg";
+        assert.match(page, new RegExp(`<meta property="og:image" content="${cover}">`));
+        assert.match(page, new RegExp(`<meta name="twitter:image" content="${cover}">`));
+        const video = [...page.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)]
+            .map((match) => JSON.parse(match[1]))
+            .find((data) => data["@type"] === "VideoObject");
+        assert.equal(video.thumbnailUrl, cover);
+        assert.match(await read("tags/job-search/index.html"), /<meta property="og:image" content="https:\/\//);
         assert.match(page, /property="og:image:width" content="480"/);
         assert.match(page, /property="og:image:height" content="750"/);
         assert.match(await read("index.html"), /covers\/older-reel.jpg"[^>]*width="480" height="750"/);

@@ -83,7 +83,7 @@ Every tag must be listed in [`data/tags.json`](data/tags.json). Reuse an existin
 
 ## Deploying
 
-Every push to `main` runs the checks and deploys the site to GitHub Pages. Pull requests run the same checks without deploying.
+Every push to `main` runs the data checks and unit tests, then deploys the site to GitHub Pages. Pull requests run those checks plus the browser tests (`npm run test:e2e`), without deploying.
 
 One-time setup for a repo admin: Settings > Pages > Build and deployment > Source: **GitHub Actions**.
 
@@ -93,5 +93,5 @@ One-time setup for a repo admin: Settings > Pages > Build and deployment > Sourc
 - `lib/render.js` writes every page as plain HTML at build time, so pages load fast, work without JavaScript, and show a title and cover when a link is shared. `lib/site.js` sorts, counts tags, and formats dates; `lib/videos.js` checks the data.
 - `src/js/` adds search, sorting, copy link, and the player controls in the browser. `src/js/search.js` is shared with the build, so search matches the same words everywhere.
 - `src/css/` follows the [CS & SE site](https://github.com/byui-cse/byui-cse.github.io): the same color, type, and spacing tokens, base styles, and buttons. The build bundles it into one file with [Lightning CSS](https://lightningcss.dev/).
-- Tests are in `test/`.
+- Unit tests are in `test/` (`npm test`). Browser tests are in `e2e/` (`npm run test:e2e`).
 - Fonts are Source Sans 3 and Source Serif 4 (SIL Open Font License), from Fontsource.

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { smartQuotes } from "../lib/html.js";
+import { instagramCode } from "../lib/videos.js";
 import { startSite, tagNames, videos } from "./helpers.mjs";
 
 let site;
@@ -9,6 +10,8 @@ after(async () => { await site?.close(); });
 
 const video = videos.find((item) => item.instagram);
 const shownTitle = smartQuotes(video.title);
+const seriesTag = videos.find((item) => item.series)?.series;
+const seriesVideos = videos.filter((item) => item.tags.includes(seriesTag));
 const videoPath = `/videos/${video.id}/`;
 const cards = (page) => page.locator("[data-video-list]").getByRole("listitem");
 const ids = async (page) => cards(page).getByRole("link").evaluateAll((links) =>
@@ -45,9 +48,13 @@ test("deep links restore search and oldest-first order through directory redirec
     const order = await cards(page).evaluateAll((items) => items.map((item) => Number(item.dataset.order)));
     assert.ok(order.length > 1 && order.length < videos.length);
     assert.deepEqual(order, [...order].sort((a, b) => b - a));
-    await page.goto("/tags/career-quest?sort=oldest");
-    assert.equal(new URL(page.url()).pathname, "/tags/career-quest/");
+    await page.goto(`/tags/${seriesTag}?sort=oldest`);
+    assert.equal(new URL(page.url()).pathname, `/tags/${seriesTag}/`);
     assert.equal(new URL(page.url()).search, "?sort=oldest");
+    assert.equal(await page.getByRole("combobox", { name: "Sort" }).inputValue(), "oldest");
+    const tagOrder = await cards(page).evaluateAll((items) => items.map((item) => Number(item.dataset.order)));
+    assert.ok(tagOrder.length > 1);
+    assert.deepEqual(tagOrder, [...tagOrder].sort((a, b) => b - a));
 });
 
 test("clearing the input and the empty-results link restore all videos", async (t) => {
@@ -87,24 +94,40 @@ test("tag index includes every tag and count, and Career Quest has exactly its v
         const row = main.getByRole("listitem").filter({ has: page.getByRole("link", { name, exact: true }) });
         assert.match(await row.textContent(), new RegExp(`\\b${count} video${count === 1 ? "" : "s"}\\b`));
     }
-    await page.goto("/tags/career-quest/");
-    assert.deepEqual(await ids(page), expectedIds(videos.filter((item) => item.tags.includes("career-quest"))));
+    assert.ok(seriesVideos.length > 0);
+    assert.equal((await page.goto(`/tags/${seriesTag}/`)).status(), 200);
+    assert.deepEqual(await ids(page), expectedIds(seriesVideos));
 });
 
 test("Instagram embed expands as a modal and Escape restores focus", async (t) => {
     const { page } = await site.page(t);
     await page.goto(`${videoPath}?source=instagram`);
-    const code = new URL(video.instagram).pathname.split("/").filter(Boolean)[1];
+    const code = instagramCode(video.instagram);
     const frame = page.getByTitle(`${shownTitle} (Instagram)`, { exact: true });
     const embed = new URL(await frame.getAttribute("src"));
     assert.equal(embed.hostname, "www.instagram.com");
     assert.equal(embed.pathname, `/p/${code}/embed/`);
     await page.getByRole("button", { name: "Expand", exact: true }).click();
     assert.equal(await page.getByRole("dialog", { name: shownTitle }).getAttribute("aria-modal"), "true");
+    assert.equal(await page.locator("[data-copy-status]").evaluate((node) => node.closest("[inert]") !== null), true);
+    for (let step = 0; step < 3; step++) {
+        await page.keyboard.press("Tab");
+        assert.equal(await page.evaluate(() => {
+            const focused = document.activeElement;
+            return focused === null || focused === document.body || document.querySelector("[data-player]").contains(focused);
+        }), true, "focus reached the page behind the open player");
+    }
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("dialog").count(), 0);
     assert.equal(await page.locator("[data-player]").getAttribute("aria-modal"), null);
-    assert.equal(await page.getByRole("button", { name: "Expand", exact: true }).evaluate((node) => node === document.activeElement), true);
+    assert.equal(await page.locator("[data-copy-status]").evaluate((node) => node.closest("[inert]") !== null), false);
+    const expand = page.getByRole("button", { name: "Expand", exact: true });
+    assert.equal(await expand.evaluate((node) => node === document.activeElement), true);
+
+    await expand.click();
+    await page.locator("[data-player]").click({ position: { x: 4, y: 4 } });
+    assert.equal(await page.getByRole("dialog").count(), 0);
+    assert.equal(await expand.evaluate((node) => node === document.activeElement), true);
 });
 
 test("Copy link writes the current URL and announces success", async (t) => {
@@ -125,7 +148,7 @@ test("unknown paths serve the 404 page with a working home link", async (t) => {
     assert.equal(page.url(), `${site.origin}/`);
 });
 
-for (const route of ["/", "/tags/", "/tags/career-quest/", videoPath]) {
+for (const route of ["/", "/tags/", `/tags/${seriesTag}/`, videoPath]) {
     test(`no page or console errors on ${route}`, async (t) => {
         const { page, aborted } = await site.page(t);
         const errors = [];

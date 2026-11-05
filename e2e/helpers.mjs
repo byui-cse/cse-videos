@@ -17,7 +17,7 @@ export const tagNames = JSON.parse(await readFile(new URL("../data/tags.json", i
 /** Build and serve the real site with directory redirects and a custom 404. */
 export const startSite = async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "cse-browser-"));
-    const outDir = path.join(directory, "site");
+    const outDir = path.resolve(directory, "site");
     let browser;
     let server;
     const close = async () => {
