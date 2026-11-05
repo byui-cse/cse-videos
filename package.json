@@ -4,7 +4,7 @@
     "description": "Video library website for the BYU-Idaho CSE department",
     "type": "module",
     "scripts": {
-        "dev": "node scripts/dev.js",
+        "dev": "node --watch scripts/dev.js",
         "build": "node scripts/build.js",
         "validate": "node scripts/validate.js",
         "test": "node --test"

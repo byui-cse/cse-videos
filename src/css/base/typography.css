@@ -12,6 +12,8 @@ h4 {
 	letter-spacing: var(--tracking-heading);
 	line-height: var(--leading-heading);
 	text-wrap: pretty;
+	/* A long word at a large text size breaks rather than run off a phone screen. */
+	overflow-wrap: break-word;
 	color: inherit;
 }
 

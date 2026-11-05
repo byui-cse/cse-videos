@@ -1,19 +1,26 @@
 /**
- * Site header: the site name and the department it belongs to.
+ * Site header: the site name, the department it belongs to, and the two
+ * places to go. Both links fit at every width, so there is no menu button.
  */
 .site-header {
 	border-block-end: 1px solid var(--color-line);
-	background: var(--color-surface);
+	background: var(--color-paper);
 }
 
 .site-header__inner {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
+	gap: var(--space-sm) var(--space-lg);
 	min-height: var(--header-h);
+	padding-block: var(--space-xs);
 }
 
+/* The name shrinks and wraps before the nav does; the nav drops to its own
+   line only when text is enlarged. */
 .brand {
 	display: flex;
+	flex: 1 1 10rem;
 	flex-direction: column;
 	color: var(--color-ink);
 	font-family: var(--font-ui);
@@ -35,4 +42,43 @@
 .brand__dept {
 	font-size: var(--text-min);
 	font-weight: var(--weight-semibold);
+	color: var(--color-ink);
+}
+
+@media (max-width: 26rem) {
+	.brand__dept {
+		font-size: 0.9375rem;
+	}
+}
+
+.site-nav__list {
+	display: flex;
+	gap: clamp(1rem, 0.5rem + 1.5vw, 2rem);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li + li {
+		margin: 0;
+	}
+}
+
+.site-nav__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--touch-min);
+	color: var(--color-ink);
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 0.4em;
+
+	&:hover,
+	&[aria-current="page"],
+	&.site-nav__link--section {
+		color: var(--color-link);
+		text-decoration-line: underline;
+	}
 }

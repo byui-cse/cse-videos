@@ -1,1 +1,443 @@
-[]
+[
+    {
+        "id": "maddie-summer-internship",
+        "title": "Maddie's summer internship",
+        "description": "Maddie had a great experience at her summer internship.",
+        "instagram": "https://www.instagram.com/reel/De-dC4sk-0p/",
+        "length": "2:14",
+        "datePosted": "2026-10-26",
+        "tags": [
+            "internships",
+            "student-stories"
+        ]
+    },
+    {
+        "id": "leeann-on-cybersecurity",
+        "title": "What LeeAnn learned about cybersecurity",
+        "description": "LeeAnn shares what she learned about the field of Cybersecurity on our student excursion to Boise in June.",
+        "instagram": "https://www.instagram.com/reel/DeaYoqzjT_c/",
+        "length": "1:09",
+        "datePosted": "2026-10-12",
+        "tags": [
+            "cybersecurity",
+            "company-trips",
+            "student-stories"
+        ]
+    },
+    {
+        "id": "career-quest-part-1",
+        "title": "Career Quest, Part 1: Every job hunt needs three things",
+        "description": "Career Quest - Part 1: Learn what you need for success in your job search.",
+        "instagram": "https://www.instagram.com/reel/Deroz-yDEqu/",
+        "length": "0:30",
+        "datePosted": "2026-10-19",
+        "tags": [
+            "career-quest",
+            "job-search"
+        ]
+    },
+    {
+        "id": "career-quest-part-2",
+        "title": "Career Quest, Part 2: Your portfolio is your sword",
+        "description": "Career Quest - Part 2: You need a portfolio.",
+        "instagram": "https://www.instagram.com/reel/DeuNoEJD7nH/",
+        "length": "0:29",
+        "datePosted": "2026-10-20",
+        "tags": [
+            "career-quest",
+            "job-search",
+            "portfolio"
+        ]
+    },
+    {
+        "id": "career-quest-part-3",
+        "title": "Career Quest, Part 3: Nobody gets through alone",
+        "description": "Career Quest - Part 3: Find a mentor to help you with your job search.",
+        "instagram": "https://www.instagram.com/reel/Dewyb69Da38/",
+        "length": "0:33",
+        "datePosted": "2026-10-21",
+        "tags": [
+            "career-quest",
+            "job-search",
+            "mentors"
+        ]
+    },
+    {
+        "id": "career-quest-part-4",
+        "title": "Career Quest, Part 4: Your resume is your shield",
+        "description": "Career Quest - Part 4:",
+        "instagram": "https://www.instagram.com/reel/DezXNQ8D0fG/",
+        "length": "0:30",
+        "datePosted": "2026-10-22",
+        "tags": [
+            "career-quest",
+            "job-search",
+            "resume"
+        ]
+    },
+    {
+        "id": "career-quest-part-5",
+        "title": "Career Quest, Part 5: The interview is the final boss",
+        "description": "Career Quest - Finale: Will you beat the rejection king?",
+        "instagram": "https://www.instagram.com/reel/De18FdvDKSB/",
+        "length": "0:49",
+        "datePosted": "2026-10-23",
+        "tags": [
+            "career-quest",
+            "job-search",
+            "interviews"
+        ]
+    },
+    {
+        "id": "tech-skills-or-soft-skills",
+        "title": "Tech skills or soft skills?",
+        "description": "Which is more important - tech skills or soft skills?",
+        "instagram": "https://www.instagram.com/reel/Dd2U1JrI1VK/",
+        "length": "0:52",
+        "datePosted": "2026-09-28",
+        "tags": [
+            "soft-skills",
+            "job-search"
+        ]
+    },
+    {
+        "id": "keep-screenshots-of-your-projects",
+        "title": "Keep screenshots of your projects",
+        "description": "Are you ready to describe your projects in a job interview?  Brother Helfrich learned the value of having screenshots of his projects in his job interviews.",
+        "instagram": "https://www.instagram.com/reel/Ddji4tijShn/",
+        "length": "2:06",
+        "datePosted": "2026-09-21",
+        "tags": [
+            "interviews",
+            "portfolio",
+            "faculty"
+        ]
+    },
+    {
+        "id": "ai-tools-before-you-graduate",
+        "title": "AI tools to know before you graduate",
+        "description": "What do you need to know about AI tools before you graduate?  This is what we learned from employers.",
+        "instagram": "https://www.instagram.com/reel/DcJawxOCv_h/",
+        "length": "0:57",
+        "datePosted": "2026-08-17",
+        "tags": [
+            "ai",
+            "job-search"
+        ]
+    },
+    {
+        "id": "showcase-project-trace",
+        "title": "Showcase: Project Trace",
+        "description": "Showcase: Project Trace",
+        "instagram": "https://www.instagram.com/reel/DdZuOaGAWk0/",
+        "length": "0:39",
+        "datePosted": "2026-09-17",
+        "tags": [
+            "student-projects"
+        ]
+    },
+    {
+        "id": "showcase-walking-robots",
+        "title": "Showcase: Walking robots",
+        "description": "Showcase: Walking Robots",
+        "instagram": "https://www.instagram.com/reel/DdHN8RNDTE5/",
+        "length": "0:21",
+        "datePosted": "2026-09-10",
+        "tags": [
+            "student-projects",
+            "robotics"
+        ]
+    },
+    {
+        "id": "showcase-ssh-arcade",
+        "title": "Showcase: play.ssharcade.dev",
+        "description": "Showcase: play.ssharcade.dev",
+        "instagram": "https://www.instagram.com/reel/DcjKo-giQjh/",
+        "length": "0:51",
+        "datePosted": "2026-08-27",
+        "tags": [
+            "student-projects",
+            "games"
+        ]
+    },
+    {
+        "id": "showcase-micro-mouse",
+        "title": "Showcase: Micro Mouse 1.0",
+        "description": "Showcase: Micro Mouse 1.0",
+        "instagram": "https://www.instagram.com/reel/DcCFCSpCcKo/",
+        "length": "0:33",
+        "datePosted": "2026-08-14",
+        "tags": [
+            "student-projects",
+            "robotics"
+        ]
+    },
+    {
+        "id": "a-qr-code-that-grows",
+        "title": "A QR code that grows",
+        "description": "Have you ever seen a QR code grow?",
+        "instagram": "https://www.instagram.com/reel/DefWv2ilH4Y/",
+        "length": "0:17",
+        "attributions": [
+            "Music: \"A Million Dreams\" by The Piano Guys"
+        ],
+        "datePosted": "2026-10-14",
+        "tags": [
+            "student-projects"
+        ]
+    },
+    {
+        "id": "not-sure-what-you-want-to-do",
+        "title": "Not sure what you want to do?",
+        "description": "What do you do if you don't know what you want to do? Try things out. Talk with people. Explore.",
+        "instagram": "https://www.instagram.com/reel/DcbcP_ejeI1/",
+        "length": "0:23",
+        "datePosted": "2026-08-24",
+        "tags": [
+            "career-exploration"
+        ]
+    },
+    {
+        "id": "what-storm-is-coming",
+        "title": "What storm is coming your way?",
+        "description": "What storm is coming your way?  How will you address it head on?",
+        "instagram": "https://www.instagram.com/reel/Dc_fYdiDfkR/",
+        "length": "0:38",
+        "datePosted": "2026-09-07",
+        "tags": [
+            "motivation"
+        ]
+    },
+    {
+        "id": "start-the-semester-well",
+        "title": "Start the semester well",
+        "description": "What are you doing to prepare to start the semester off well?",
+        "instagram": "https://www.instagram.com/reel/Dctd0EvjYOO/",
+        "length": "0:41",
+        "datePosted": "2026-08-31",
+        "tags": [
+            "study-habits"
+        ]
+    },
+    {
+        "id": "eliminate-a-distraction",
+        "title": "Eliminate a distraction",
+        "description": "Which distractions are slowing you down?  Can you eliminate them?",
+        "instagram": "https://www.instagram.com/reel/Db3ZKSgiDzv/",
+        "length": "0:33",
+        "datePosted": "2026-08-10",
+        "tags": [
+            "study-habits",
+            "faculty"
+        ]
+    },
+    {
+        "id": "not-my-job",
+        "title": "Don't say \"it's not my job\"",
+        "description": "Employers are looking for those that will help them with the things they need.  Don't say, \"it's not my job.\"",
+        "instagram": "https://www.instagram.com/reel/DbtGEHAD_MS/",
+        "length": "0:38",
+        "datePosted": "2026-08-06",
+        "tags": [
+            "soft-skills",
+            "job-search"
+        ]
+    },
+    {
+        "id": "the-ultimate-programming-exam",
+        "title": "The job interview: the ultimate programming exam",
+        "description": "The job interview: the ultimate programming examination.",
+        "instagram": "https://www.instagram.com/reel/DblXmpKAHA6/",
+        "length": "0:23",
+        "datePosted": "2026-08-03",
+        "tags": [
+            "interviews"
+        ]
+    },
+    {
+        "id": "why-an-online-portfolio",
+        "title": "Why you need an online portfolio",
+        "description": "An online portfolio provides depth that doesn't fit on your resume.",
+        "instagram": "https://www.instagram.com/reel/DbbEahljAiY/",
+        "length": "0:23",
+        "datePosted": "2026-07-30",
+        "tags": [
+            "portfolio"
+        ]
+    },
+    {
+        "id": "summer-projects",
+        "title": "Which projects will you work on this summer?",
+        "description": "Summer is here.  Finally, you don't have homework.  Which projects are you going to work on?",
+        "instagram": "https://www.instagram.com/reel/DbTWEJFARfy/",
+        "length": "0:51",
+        "datePosted": "2026-07-27",
+        "tags": [
+            "student-projects",
+            "motivation"
+        ]
+    },
+    {
+        "id": "informational-interviews-what-to-ask",
+        "title": "Informational interviews: ask what they like",
+        "description": "Professionals in the tech industry really enjoy a good informational interview.  Ask the questions that spark real conversation.  Ask what they like about their job.  Ask them for advice about how to prepare to work in the industry.",
+        "instagram": "https://www.instagram.com/reel/DbJC6bwCSW0/",
+        "length": "0:43",
+        "datePosted": "2026-07-23",
+        "tags": [
+            "informational-interviews",
+            "networking"
+        ]
+    },
+    {
+        "id": "write-code-before-games",
+        "title": "Write code before you play games",
+        "description": "It's the little stuff that counts.  Write code before you play games.",
+        "instagram": "https://www.instagram.com/reel/DbEmCZ6E8aC/",
+        "length": "0:35",
+        "attributions": [
+            "\"Rexburg Idaho Temple at Sunset 2009\" by Pavili255 (https://commons.wikimedia.org/wiki/User:Pavili255), used under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)"
+        ],
+        "datePosted": "2026-07-21",
+        "tags": [
+            "study-habits"
+        ]
+    },
+    {
+        "id": "informational-interviews-what-to-avoid",
+        "title": "Informational interviews: learn from others' mistakes",
+        "description": "Learn from the mistakes of others.  What was your most awkward informational interview moment?",
+        "instagram": "https://www.instagram.com/reel/DbBUg9Pii47/",
+        "length": "0:35",
+        "datePosted": "2026-07-20",
+        "tags": [
+            "informational-interviews",
+            "networking"
+        ]
+    },
+    {
+        "id": "what-employers-want-in-the-ai-age",
+        "title": "What employers want in the AI age",
+        "description": "In the AI age, what are employers looking for?",
+        "instagram": "https://www.instagram.com/reel/Da3BVGNjdAP/",
+        "length": "0:47",
+        "datePosted": "2026-07-16",
+        "tags": [
+            "ai",
+            "job-search"
+        ]
+    },
+    {
+        "id": "final-projects-week",
+        "title": "Final projects week",
+        "description": "We know you are all working on your final projects this week.  The Lord is interested in your success.",
+        "instagram": "https://www.instagram.com/reel/DavS_aCGMLR/",
+        "length": "0:47",
+        "datePosted": "2026-07-13",
+        "tags": [
+            "faith",
+            "motivation"
+        ]
+    },
+    {
+        "id": "real-world-problems",
+        "title": "Try real world problems",
+        "description": "You think homework assignments are boring?  Try real world problems for a chance to feel like a superhero.",
+        "instagram": "https://www.instagram.com/reel/DamSIp6DQOf/",
+        "length": "0:22",
+        "datePosted": "2026-07-09",
+        "tags": [
+            "student-projects",
+            "student-stories"
+        ]
+    },
+    {
+        "id": "boise-company-trip",
+        "title": "Students on the Boise company trip",
+        "description": "Hear what these students have to say about their trip to visit companies in Boise.  Watch the department announcements for future expeditions.",
+        "instagram": "https://www.instagram.com/reel/Dagf2QRFc94/",
+        "length": "0:46",
+        "datePosted": "2026-07-07",
+        "tags": [
+            "company-trips",
+            "student-stories"
+        ]
+    },
+    {
+        "id": "your-connections-matter",
+        "title": "The value of your personal connections",
+        "description": "The value of your personal connections in looking for a job cannot be overestimated.",
+        "instagram": "https://www.instagram.com/reel/DaQZYxGj4OG/",
+        "length": "0:15",
+        "datePosted": "2026-07-01",
+        "tags": [
+            "networking",
+            "job-search"
+        ]
+    },
+    {
+        "id": "dont-wait-until-senior-year",
+        "title": "Don't wait until senior year",
+        "description": "What have you done to start preparing for your future?  Don't wait until your senior year to work on your resume and portfolio.",
+        "instagram": "https://www.instagram.com/reel/DaBFPwkDRmK/",
+        "length": "0:32",
+        "datePosted": "2026-06-25",
+        "tags": [
+            "resume",
+            "portfolio",
+            "faculty"
+        ]
+    },
+    {
+        "id": "meet-brother-crosby",
+        "title": "Meet Brother Crosby",
+        "description": "Meet Brother Crosby! Job expereince matters more now than ever before. Where will you get your first tech experience?",
+        "instagram": "https://www.instagram.com/reel/DZvi7gkiECI/",
+        "length": "0:21",
+        "datePosted": "2026-06-18",
+        "tags": [
+            "faculty",
+            "internships"
+        ]
+    },
+    {
+        "id": "seth-taylor-internship-insight",
+        "title": "Seth Taylor's internship insight",
+        "description": "Seth Taylor shares an insight from his internship.  What are companies paying you to do?",
+        "instagram": "https://www.instagram.com/reel/DZn8xCdAVFe/",
+        "length": "0:52",
+        "datePosted": "2026-06-15",
+        "tags": [
+            "internships",
+            "student-stories"
+        ]
+    },
+    {
+        "id": "brother-miller-on-staying-in-motion",
+        "title": "Brother Miller on staying in motion",
+        "description": "Brother Miller tells how being in motion opens the door to additional help from Heaven.",
+        "instagram": "https://www.instagram.com/reel/DZadLCMjjDd/",
+        "length": "0:49",
+        "datePosted": "2026-06-10",
+        "tags": [
+            "faith",
+            "faculty",
+            "motivation"
+        ]
+    },
+    {
+        "id": "is-your-portfolio-interview-ready",
+        "title": "Is your portfolio ready for your first interview?",
+        "description": "Is your portfolio ready for your first job interview? Technical projects give you something to speak to at a job interview. Post your projects online so others can see your skills and experience.",
+        "instagram": "https://www.instagram.com/reel/DZYXMdzMV0w/",
+        "length": "0:19",
+        "attributions": [
+            "Music: \"Local Forecast - Slower\" by Kevin MacLeod, licensed under CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/)"
+        ],
+        "datePosted": "2026-06-09",
+        "tags": [
+            "portfolio",
+            "interviews"
+        ]
+    }
+]

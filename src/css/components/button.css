@@ -1,0 +1,63 @@
+/**
+ * Buttons, after the CS & SE site's: brand blue primary, outlined secondary,
+ * white on the blue bands. Corners are squared off to the small radius.
+ */
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	min-height: 3.25rem;
+	padding: 0.7rem 1.5rem;
+	border: 2px solid var(--color-brand);
+	border-radius: var(--radius-sm);
+	background: var(--color-brand);
+	color: var(--color-on-brand);
+	font-family: var(--font-ui);
+	font-size: 1.125rem;
+	font-weight: var(--weight-bold);
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color var(--fast) var(--ease),
+		border-color var(--fast) var(--ease),
+		color var(--fast) var(--ease);
+
+	&:hover {
+		background: var(--color-brand-hover);
+		border-color: var(--color-brand-hover);
+		color: var(--color-on-brand);
+	}
+}
+
+.button--secondary {
+	background: transparent;
+	border-color: var(--color-link);
+	color: var(--color-link);
+
+	&:hover {
+		background: var(--color-link);
+		border-color: var(--color-link);
+		color: var(--color-paper);
+	}
+}
+
+.button--small {
+	min-height: var(--touch-min);
+	padding: 0.45rem 1.1rem;
+	font-size: var(--text-min);
+}
+
+.button--on-band {
+	background: var(--color-on-band);
+	border-color: var(--color-on-band);
+	color: var(--color-band-deep);
+
+	&:hover {
+		background: transparent;
+		border-color: var(--color-on-band);
+		color: var(--color-on-band);
+	}
+}

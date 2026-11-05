@@ -9,14 +9,30 @@
 
 	a {
 		color: var(--color-on-band);
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+
+	:focus-visible {
+		outline-color: var(--color-band-accent);
 	}
 }
 
 .site-footer__inner {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: baseline;
 	gap: var(--space-md) var(--space-xl);
 	justify-content: space-between;
+}
+
+.site-footer__name {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: var(--weight-bold);
 }
 
 .site-footer__links {

@@ -1,6 +1,6 @@
 /**
- * CSE Videos stylesheet. Tokens and base styles come from the CS & SE site;
- * layout and components are this site's own.
+ * CSE Videos stylesheet. Tokens, base styles, buttons, and the band, card and
+ * list patterns follow the CS & SE site; the video components are this site's own.
  * Layers: tokens → base → layout → components → utilities.
  */
 @layer tokens, base, layout, components, utilities;
@@ -16,5 +16,13 @@
 @import "./layout/layout.css" layer(layout);
 @import "./layout/header.css" layer(layout);
 @import "./layout/footer.css" layer(layout);
+
+@import "./components/button.css" layer(components);
+@import "./components/chips.css" layer(components);
+@import "./components/intro.css" layer(components);
+@import "./components/listing.css" layer(components);
+@import "./components/tag-index.css" layer(components);
+@import "./components/player.css" layer(components);
+@import "./components/video-page.css" layer(components);
 
 @import "./utilities/helpers.css" layer(utilities);

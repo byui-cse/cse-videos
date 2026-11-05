@@ -21,7 +21,8 @@ html {
 
 body {
 	margin: 0;
-	min-width: 20rem;
+	/* No minimum width: with a large default font or page zoom on a phone, a
+	   minimum forces a sideways scroll. Layouts wrap instead. */
 	min-height: 100dvh;
 	background-color: var(--color-paper);
 	color: var(--color-ink);

@@ -1,0 +1,169 @@
+/**
+ * The video player. Tall videos (Shorts and reels) get a narrow column sized
+ * to fit the window; 16:9 videos use the full width up to the window height.
+ * Expanded, the same element is fixed over the page, so the video keeps
+ * playing instead of reloading.
+ */
+.player {
+	display: grid;
+	gap: var(--space-sm);
+	justify-items: start;
+}
+
+.player:not(.is-expanded) {
+	width: min(100%, calc((100svh - 12rem) * 16 / 9));
+}
+
+/* Square corners, like the covers in the grid. */
+.player__frame {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	background: #000000;
+}
+
+/* The cover shows until the player has loaded and paints over it. */
+.player__poster {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.player__iframe {
+	position: relative;
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	border: 0;
+}
+
+.player[data-source="youtube"][data-youtube-shape="tall"] .player__iframe {
+	aspect-ratio: 9 / 16;
+}
+
+/* Fixed widths, not percentages, so the grid column beside the details
+   sizes to the player instead of to an iframe's default 300px. */
+.player:not(.is-expanded)[data-source="youtube"][data-youtube-shape="tall"] {
+	width: min(24rem, calc((100svh - 12rem) * 9 / 16));
+	max-width: 100%;
+}
+
+/* Instagram's player has its own header and footer and reports its height. */
+.player[data-source="instagram"] {
+	.player__frame {
+		background: var(--color-surface);
+	}
+
+	.player__iframe {
+		height: 46rem;
+		aspect-ratio: auto;
+	}
+}
+
+/* Instagram's player is about 1.25 times as tall as it is wide plus 13rem of
+   its own header and footer, so on shorter windows it narrows to fit more of
+   it on screen, down to the 20.5rem Instagram needs. */
+.player:not(.is-expanded)[data-source="instagram"] {
+	width: clamp(20.5rem, calc((100svh - 25rem) * 0.8), 25rem);
+	max-width: 100%;
+}
+
+/* The controls sit above the video so Expand is on the first screen even
+   when the player is taller than the window. */
+.player__bar {
+	display: flex;
+	flex-wrap: wrap;
+	order: -1;
+	align-items: center;
+	gap: var(--space-sm) var(--space-md);
+}
+
+.player__sources {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-xs);
+	font-family: var(--font-ui);
+}
+
+.player__sources-label {
+	margin-inline-end: var(--space-2xs);
+	color: var(--color-muted);
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+}
+
+.player__source {
+	min-height: var(--touch-min);
+	padding: 0.4rem 0.9rem;
+	border: 1px solid var(--color-muted);
+	border-radius: 3px;
+	background: var(--color-surface);
+	color: var(--color-ink);
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--color-ink);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: var(--color-ink);
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+}
+
+/* ---------- Expanded ---------- */
+
+.has-expanded-player {
+	overflow: hidden;
+}
+
+.player.is-expanded {
+	position: fixed;
+	inset: 0;
+	z-index: 500;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-md);
+	padding: var(--space-md);
+	overflow-y: auto;
+	background: rgb(6 10 16 / 0.94);
+
+	/* Close sits above the video so it stays on screen even when Instagram's
+	   player is taller than the window. Centered when it all fits; scrolls
+	   from the top when it doesn't. */
+	.player__bar {
+		flex: none;
+		order: -1;
+		justify-content: center;
+		margin-block-start: auto;
+	}
+
+	.player__frame {
+		flex: none;
+		margin-block-end: auto;
+		width: min(100%, calc((100dvh - 6rem) * 16 / 9));
+	}
+
+	.player__sources-label {
+		color: #c9d3dd;
+	}
+
+	:focus-visible {
+		outline-color: var(--color-band-accent);
+	}
+}
+
+.player.is-expanded[data-source="youtube"][data-youtube-shape="tall"] .player__frame {
+	width: min(100%, calc((100dvh - 6rem) * 9 / 16));
+}
+
+.player.is-expanded[data-source="instagram"] .player__frame {
+	width: min(100%, 33.75rem);
+}
