@@ -5,6 +5,7 @@
 import { initList } from "./list.js";
 import { initPlayer } from "./player.js";
 import { initShare } from "./share.js";
+import { initBack } from "./back.js";
 
 for (const element of document.querySelectorAll("[data-needs-js]")) {
     element.hidden = false;
@@ -13,3 +14,4 @@ for (const element of document.querySelectorAll("[data-needs-js]")) {
 initList();
 initShare();
 initPlayer();
+initBack();

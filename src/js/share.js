@@ -1,7 +1,8 @@
 /**
- * "Copy link" buttons. They copy the page's address as it is right now, so a
- * search, a sort order, or the chosen player all come along.
+ * Link buttons share on phones and copy elsewhere. They use the page's
+ * address as it is right now, including a search or chosen player.
  */
+import { shareMode } from "./state.js";
 
 /**
  * For browsers that block the clipboard API (some in-app browsers do).
@@ -45,20 +46,49 @@ const copy = async (text) => {
 };
 
 export const initShare = () => {
+    const mode = shareMode({
+        canShare: typeof navigator.share === "function",
+        coarsePointer: window.matchMedia?.("(pointer: coarse)")?.matches ?? false
+    });
+
     for (const button of document.querySelectorAll("[data-copy-link]")) {
         const status = button.parentElement?.querySelector("[data-copy-status]");
-        const label = button.textContent;
+        const label = mode === "share" ? "Share" : button.textContent;
         let timer;
 
+        button.textContent = label;
+
         button.addEventListener("click", async () => {
-            const copied = await copy(window.location.href);
+            let message;
+            let statusMessage;
+
+            if (mode === "share") {
+                try {
+                    await navigator.share({
+                        title: document.querySelector("h1")?.textContent?.trim() || document.title,
+                        url: window.location.href
+                    });
+                    message = "Link shared";
+                    statusMessage = message;
+                } catch (error) {
+                    if (error?.name === "AbortError") {
+                        return;
+                    }
+                }
+            }
+
+            if (!message) {
+                const copied = await copy(window.location.href);
+                message = copied ? "Link copied" : "Copy failed";
+                statusMessage = copied ? message : "Couldn't copy. Copy the address from the address bar.";
+            }
 
             // The label says what happened, in place, so nothing shifts; the
             // hidden status says it to screen readers.
-            button.textContent = copied ? "Link copied" : "Copy failed";
+            button.textContent = message;
 
             if (status) {
-                status.textContent = copied ? "Link copied" : "Couldn't copy. Copy the address from the address bar.";
+                status.textContent = statusMessage;
             }
 
             clearTimeout(timer);

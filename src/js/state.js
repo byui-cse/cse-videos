@@ -100,6 +100,49 @@ export const playerUrl = (href, source, defaultSource) => {
 };
 
 /**
+ * Phones with a share sheet use it; other devices copy the link.
+ * @param {{ canShare: boolean, coarsePointer: boolean }} options
+ * @returns {"share" | "copy"}
+ */
+export const shareMode = ({ canShare, coarsePointer }) => canShare && coarsePointer ? "share" : "copy";
+
+/**
+ * A list page that led to this video, if it belongs to this site.
+ * @param {string} referrer
+ * @param {string} here
+ * @returns {{ href: string, kind: "results" | "tag" | "home" } | null}
+ */
+export const backTarget = (referrer, here) => {
+    if (!referrer) {
+        return null;
+    }
+
+    try {
+        const current = new URL(here);
+        const previous = new URL(referrer);
+        const videoPath = current.pathname.match(/^(.*\/)videos\/[^/]+\/$/);
+
+        if (!videoPath || previous.origin !== current.origin) {
+            return null;
+        }
+
+        const root = videoPath[1];
+        const isHome = previous.pathname === root;
+        const isTag = previous.pathname.startsWith(root)
+            && /^tags\/[^/]+\/$/.test(previous.pathname.slice(root.length));
+
+        if (!isHome && !isTag) {
+            return null;
+        }
+
+        const kind = readListParams(previous.search).query !== "" ? "results" : isTag ? "tag" : "home";
+        return { href: referrer, kind };
+    } catch {
+        return null;
+    }
+};
+
+/**
  * The height in an Instagram player's MEASURE message, or null. The message
  * is a JSON string like {"details":{"height":583},"type":"MEASURE"}.
  * @param {unknown} data

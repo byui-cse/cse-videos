@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { countText, listUrl, measuredHeight, playerUrl, plural, readListParams, requestedSource } from "../src/js/state.js";
+import { backTarget, countText, listUrl, measuredHeight, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
 
 describe("list address", () => {
     it("reads the search and order, falling back to newest first", () => {
@@ -22,6 +22,54 @@ describe("list address", () => {
         assert.equal(countText(5, 36, "port"), "5 of 36 videos match “port”");
         assert.equal(countText(0, 36, "zzz"), "No videos match “zzz”");
         assert.equal(plural(2, "tag"), "2 tags");
+    });
+});
+
+describe("sharing", () => {
+    it("uses the share sheet only when sharing is available on a coarse pointer", () => {
+        assert.equal(shareMode({ canShare: true, coarsePointer: true }), "share");
+        assert.equal(shareMode({ canShare: true, coarsePointer: false }), "copy");
+        assert.equal(shareMode({ canShare: false, coarsePointer: true }), "copy");
+        assert.equal(shareMode({ canShare: false, coarsePointer: false }), "copy");
+    });
+});
+
+describe("back link", () => {
+    const here = "https://example.org/videos/portfolio-intro/";
+
+    it("returns to home or a search on home", () => {
+        assert.deepEqual(backTarget("https://example.org/", here), { href: "https://example.org/", kind: "home" });
+        assert.deepEqual(backTarget("https://example.org/?sort=oldest", here), { href: "https://example.org/?sort=oldest", kind: "home" });
+        assert.deepEqual(backTarget("https://example.org/?q=portfolio&sort=oldest", here), {
+            href: "https://example.org/?q=portfolio&sort=oldest", kind: "results"
+        });
+        assert.deepEqual(backTarget("https://example.org/?q=%20", here), { href: "https://example.org/?q=%20", kind: "home" });
+    });
+
+    it("returns to a tag page", () => {
+        assert.deepEqual(backTarget("https://example.org/tags/career-quest/?sort=oldest", here), {
+            href: "https://example.org/tags/career-quest/?sort=oldest", kind: "tag"
+        });
+        assert.deepEqual(backTarget("https://example.org/tags/career-quest/?q=portfolio", here), {
+            href: "https://example.org/tags/career-quest/?q=portfolio", kind: "results"
+        });
+    });
+
+    it("uses the video path to find a subpath deployment's root", () => {
+        assert.deepEqual(backTarget("https://example.org/cse-videos/?q=portfolio", "https://example.org/cse-videos/videos/intro/?source=youtube"), {
+            href: "https://example.org/cse-videos/?q=portfolio", kind: "results"
+        });
+        assert.deepEqual(backTarget("https://example.org/cse-videos/tags/career-quest/", "https://example.org/cse-videos/videos/intro/"), {
+            href: "https://example.org/cse-videos/tags/career-quest/", kind: "tag"
+        });
+        assert.equal(backTarget("https://example.org/", "https://example.org/cse-videos/videos/intro/"), null);
+    });
+
+    it("ignores pages that are not a list on this site", () => {
+        assert.equal(backTarget("https://other.org/?q=portfolio", here), null);
+        assert.equal(backTarget("", here), null);
+        assert.equal(backTarget("https://example.org/videos/another/", here), null);
+        assert.equal(backTarget("not a URL", here), null);
     });
 });
 
