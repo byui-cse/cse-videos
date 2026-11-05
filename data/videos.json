@@ -34,7 +34,9 @@
         "tags": [
             "career-quest",
             "job-search"
-        ]
+        ],
+        "series": "career-quest",
+        "part": 1
     },
     {
         "id": "career-quest-part-2",
@@ -47,7 +49,9 @@
             "career-quest",
             "job-search",
             "portfolio"
-        ]
+        ],
+        "series": "career-quest",
+        "part": 2
     },
     {
         "id": "career-quest-part-3",
@@ -60,7 +64,9 @@
             "career-quest",
             "job-search",
             "mentors"
-        ]
+        ],
+        "series": "career-quest",
+        "part": 3
     },
     {
         "id": "career-quest-part-4",
@@ -73,7 +79,9 @@
             "career-quest",
             "job-search",
             "resume"
-        ]
+        ],
+        "series": "career-quest",
+        "part": 4
     },
     {
         "id": "career-quest-part-5",
@@ -86,7 +94,9 @@
             "career-quest",
             "job-search",
             "interviews"
-        ]
+        ],
+        "series": "career-quest",
+        "part": 5
     },
     {
         "id": "tech-skills-or-soft-skills",

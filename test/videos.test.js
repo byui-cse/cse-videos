@@ -145,4 +145,43 @@ describe("validateVideos", () => {
     it("accepts hour-long lengths", () => {
         assert.deepEqual(validateVideos([video({ length: "1:02:30" })]), []);
     });
+
+    it("accepts numbered parts in a series", () => {
+        assert.deepEqual(validateVideos([
+            video({ series: "career-quest", part: 1 }),
+            video({ id: "career-quest-part-2", series: "career-quest", part: 2 })
+        ]), []);
+    });
+
+    it("checks series and part values and requires them together", () => {
+        const cases = [
+            [{ series: "Career Quest", part: 1 }, '"series" must be lowercase words joined by hyphens'],
+            [{ series: "career-quest", part: 0 }, '"part" must be a whole number, 1 or more'],
+            [{ series: "career-quest", part: 1.5 }, '"part" must be a whole number, 1 or more'],
+            [{ series: "career-quest", part: "1" }, '"part" must be a whole number, 1 or more'],
+            [{ part: 1 }, '"part" needs a "series"'],
+            [{ series: "career-quest" }, '"series" needs a "part"']
+        ];
+
+        for (const [overrides, expected] of cases) {
+            assert.deepEqual(validateVideos([video(overrides)]), [
+                `video 1 (career-quest-part-1): ${expected}`
+            ]);
+        }
+    });
+
+    it("rejects duplicate part numbers within the same series", () => {
+        const errors = validateVideos([
+            video({ series: "career-quest", part: 1 }),
+            video({ id: "another-part", series: "career-quest", part: 1 })
+        ]);
+
+        assert.deepEqual(errors, [
+            'video 2 (another-part): another video already uses part 1 in series "career-quest"'
+        ]);
+        assert.deepEqual(validateVideos([
+            video({ series: "career-quest", part: 1 }),
+            video({ id: "other-series", series: "another-series", part: 1 })
+        ]), []);
+    });
 });

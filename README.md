@@ -66,6 +66,8 @@ Everything is in the address, so any view can be shared by copying the link.
 | `datePosted` | Yes | `YYYY-MM-DD`. Lists are sorted by this date. |
 | `dateCreated` | No | `YYYY-MM-DD` |
 | `tags` | Yes | A list of lowercase words joined by hyphens |
+| `series` | With `part` | A lowercase slug for videos in a series, like `career-quest` |
+| `part` | With `series` | A whole number starting at 1, like `1` for Career Quest, Part 1 |
 | `stats` | No | Counts, like `{ "newPeople": 3, "projects": 1 }` |
 
 When a video has both links, its page plays YouTube and offers a switch to Instagram, where viewers can see likes and comments.
