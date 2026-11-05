@@ -39,6 +39,8 @@ let out;
 let result;
 
 const read = (file) => fs.readFile(path.join(out, file), "utf8");
+const structuredData = (page) => [...page.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)]
+    .map((match) => JSON.parse(match[1]));
 
 before(async () => {
     dir = await fs.mkdtemp(path.join(os.tmpdir(), "cse-videos-"));
@@ -104,6 +106,46 @@ describe("build", () => {
         assert.throws(() => siteUrlFrom("byui-cse.github.io"), /SITE_URL/);
         assert.throws(() => siteUrlFrom("ftp://example.com/"), /SITE_URL/);
     });
+
+    it("writes a sitemap for every public page with the newest list dates", async () => {
+        const xml = await read("sitemap.xml");
+        const base = "https://byui-cse.github.io/cse-videos/";
+        const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+
+        assert.deepEqual(locations, [
+            base,
+            `${base}tags/`,
+            `${base}tags/ai/`,
+            `${base}tags/career-quest/`,
+            `${base}tags/job-search/`,
+            `${base}videos/sample-short/`,
+            `${base}videos/older-reel/`,
+            `${base}videos/lecture/`
+        ]);
+        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/<\/loc><lastmod>2026-11-01<\/lastmod>/);
+        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/tags\/job-search\/<\/loc><lastmod>2026-10-19<\/lastmod>/);
+        assert.match(xml, /<loc>https:\/\/byui-cse\.github\.io\/cse-videos\/videos\/older-reel\/<\/loc><lastmod>2026-08-27<\/lastmod>/);
+        assert.equal(xml.match(/<url>/g)?.length, 8);
+    });
+
+    it("writes robots.txt with the sitemap address", async () => {
+        assert.equal(await read("robots.txt"), "User-agent: *\nAllow: /\nSitemap: https://byui-cse.github.io/cse-videos/sitemap.xml\n");
+    });
+
+    it("writes robots.txt without a sitemap and omits structured data without SITE_URL", async () => {
+        const localOut = path.join(dir, "local-dist");
+        await build({
+            dataFile: path.join(dir, "videos.json"),
+            tagsFile: path.join(dir, "tags.json"),
+            outDir: localOut,
+            siteUrl: ""
+        });
+
+        assert.equal(await fs.readFile(path.join(localOut, "robots.txt"), "utf8"), "User-agent: *\nAllow: /\n");
+        await assert.rejects(fs.access(path.join(localOut, "sitemap.xml")), { code: "ENOENT" });
+        const page = await fs.readFile(path.join(localOut, "videos", "sample-short", "index.html"), "utf8");
+        assert.deepEqual(structuredData(page), []);
+    });
 });
 
 describe("home page", () => {
@@ -145,6 +187,7 @@ describe("home page", () => {
         const page = await read("index.html");
         assert.match(page, /<link rel="canonical" href="https:\/\/byui-cse\.github\.io\/cse-videos\/">/);
         assert.match(page, /<meta http-equiv="Content-Security-Policy"/);
+        assert.equal(structuredData(page)[0]["@type"], "WebSite");
     });
 });
 
@@ -160,6 +203,7 @@ describe("tag pages", () => {
         const order = [...page.matchAll(/href="\.\.\/\.\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
         assert.deepEqual(order, ["sample-short", "older-reel"]);
         assert.match(page, /<h1 class="page-head__title" id="page-title">Job search<\/h1>/);
+        assert.equal(structuredData(page)[0]["@type"], "BreadcrumbList");
     });
 
     it("name the tag once on screen, with the list heading for screen readers", async () => {
@@ -248,6 +292,29 @@ describe("video pages", () => {
         const page = await read("videos/lecture/index.html");
         assert.match(page, /<meta property="og:image" content="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/hqdefault\.jpg">/);
         assert.match(page, /<meta property="og:url" content="https:\/\/byui-cse\.github\.io\/cse-videos\/videos\/lecture\/">/);
+        assert.match(page, /<meta property="og:image:width" content="480">/);
+        assert.match(page, /<meta property="og:image:height" content="360">/);
+        assert.match(page, /<meta property="og:image:alt" content="A lecture">/);
+        assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
+        assert.match(page, /<meta name="twitter:image" content="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/hqdefault\.jpg">/);
+        assert.match(page, /<meta name="twitter:title" content="A lecture">/);
+        assert.match(page, /<meta name="twitter:description"/);
+        assert.match(page, /<meta property="og:type" content="video.other">/);
+    });
+
+    it("writes parseable VideoObject and breadcrumb data with absolute addresses", async () => {
+        const page = await read("videos/sample-short/index.html");
+        const [video, trail] = structuredData(page);
+
+        assert.equal(video["@type"], "VideoObject");
+        assert.equal(video.description, VIDEOS[0].description);
+        assert.equal(video.thumbnailUrl, "https://i.ytimg.com/vi/dQw4w9WgXcQ/oar2.jpg");
+        assert.equal(video.embedUrl, "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&playsinline=1");
+        assert.equal(video.url, "https://byui-cse.github.io/cse-videos/videos/sample-short/");
+        assert.equal(trail["@type"], "BreadcrumbList");
+        assert.equal(trail.itemListElement[0].item, "https://byui-cse.github.io/cse-videos/");
+        assert.equal(trail.itemListElement[1].item, video.url);
+        assert.match(page, /<meta name="twitter:card" content="summary">/);
     });
 });
 

@@ -11,7 +11,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
-import { collectTags, plural } from "../lib/site.js";
+import { robotsTxt, sitemapXml } from "../lib/seo.js";
+import { collectTags, newestFirst, plural } from "../lib/site.js";
 import { loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
 
 export { plural };
@@ -154,6 +155,22 @@ export const build = async ({
 
     for (const [file, contents] of pages) {
         await writeFile(path.join(staging, file), contents);
+    }
+
+    await writeFile(path.join(staging, "robots.txt"), robotsTxt(site.siteUrl));
+
+    if (site.siteUrl) {
+        const newestDate = newestFirst(videos)[0]?.datePosted;
+        const entries = [
+            { url: site.siteUrl, lastmod: newestDate },
+            { url: `${site.siteUrl}tags/`, lastmod: newestDate },
+            ...site.tags.map((tag) => ({
+                url: `${site.siteUrl}tags/${tag.slug}/`,
+                lastmod: newestFirst(videos.filter((video) => video.tags.includes(tag.slug)))[0]?.datePosted
+            })),
+            ...videos.map((video) => ({ url: `${site.siteUrl}videos/${video.id}/`, lastmod: video.datePosted }))
+        ];
+        await writeFile(path.join(staging, "sitemap.xml"), sitemapXml(entries));
     }
 
     await fs.rm(outDir, { recursive: true, force: true });
