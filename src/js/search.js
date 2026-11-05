@@ -29,11 +29,29 @@ export const words = (text) => [...new Set(normalize(text)
     .filter(Boolean))];
 
 /**
- * True when every word typed is the start of some word in the video. An empty
- * search matches everything.
+ * A short form of a typed word, when removing its ending leaves enough letters.
+ * @param {string} term
+ * @returns {string}
+ */
+const stem = (term) => {
+    if (/[+#]/.test(term)) {
+        return "";
+    }
+
+    const ending = term.match(/(?:ing|ed|es|s)$/)?.[0];
+    const shorter = term.endsWith("ies") ? `${term.slice(0, -3)}y` : ending ? term.slice(0, -ending.length) : "";
+    return shorter.length >= 3 ? shorter : "";
+};
+
+/**
+ * True when every word typed, or its light stem, starts some word in the video.
+ * An empty search matches everything.
  * @param {string[]} videoWords
  * @param {string} query
  * @returns {boolean}
  */
 export const matches = (videoWords, query) =>
-    words(query).every((term) => videoWords.some((word) => word.startsWith(term)));
+    words(query).every((term) => {
+        const shorter = stem(term);
+        return videoWords.some((word) => word.startsWith(term) || (shorter && word.startsWith(shorter)));
+    });

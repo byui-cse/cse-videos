@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { escapeHtml, html, linkify, raw } from "../lib/html.js";
+import { searchWords } from "../lib/site.js";
 import { matches, normalize, words } from "../src/js/search.js";
 
 describe("html", () => {
@@ -71,6 +73,28 @@ describe("search", () => {
         assert.equal(matches(video, "portfolio interview"), false);
     });
 
+    it("matches common endings against singular video words", () => {
+        for (const [query, singular] of [
+            ["resumes", "resume"],
+            ["jobs", "job"],
+            ["careers", "career"],
+            ["interviewing", "interview"],
+            ["studies", "study"],
+            ["portfolios", "portfolio"],
+            ["completed", "complete"]
+        ]) {
+            assert.equal(matches(words(singular), query), true, query);
+        }
+    });
+
+    it("does not shorten terms below three characters", () => {
+        assert.equal(matches(words("air"), "ai"), true);
+        assert.equal(matches(words("main"), "ai"), false);
+        assert.equal(matches(words("css"), "cs"), true);
+        assert.equal(matches(words("course"), "cs"), false);
+        assert.equal(matches(words("build"), "bus"), false);
+    });
+
     it("treats tag spellings and hashtags like plain words", () => {
         assert.equal(matches(video, "job-search"), true);
         assert.equal(matches(video, "#portfolio"), true);
@@ -101,5 +125,18 @@ describe("search", () => {
         assert.equal(matches(words("Career Quest"), "c#"), false);
         assert.equal(matches(languages, "c++"), true);
         assert.equal(matches(languages, "c"), true);
+        assert.equal(matches(words("c++"), "c#"), false);
+        assert.equal(matches(words("c#"), "c++"), false);
+    });
+
+    it("finds the same videos for job and jobs in the video library", () => {
+        const videos = JSON.parse(readFileSync(new URL("../data/videos.json", import.meta.url), "utf8"));
+        const indexed = videos.map((video) => searchWords(video).split(" "));
+        const count = (query) => indexed.filter((videoWords) => matches(videoWords, query)).length;
+        const jobCount = count("job");
+        const jobsCount = count("jobs");
+
+        assert.ok(jobCount > 0);
+        assert.equal(jobsCount, jobCount);
     });
 });

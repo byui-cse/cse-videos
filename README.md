@@ -29,7 +29,7 @@ Everything is in the address, so any view can be shared by copying the link.
 | Address | Shows |
 | --- | --- |
 | `/` | Every video, newest first, with search |
-| `/?q=portfolio` | A search. Every word typed has to match the start of a word in the title, description, tags, or credits. |
+| `/?q=portfolio` | A search. Every word typed has to match the start of a word in the title, description, tags, or credits. Plurals and -ing forms count, so "jobs" finds "job" and "interviewing" finds "interview". |
 | `/?sort=oldest` | Oldest first. Works on the home page and on tag pages. |
 | `/tags/` | Every tag and how many videos have it |
 | `/tags/portfolio/` | The videos with one tag |
