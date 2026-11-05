@@ -16,17 +16,18 @@ export const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"
 
 /**
  * The search and sort order in an address's query string. Anything that
- * isn't a known order falls back to newest first.
+ * isn't a known order falls back to the page's default.
  * @param {string} search like "?q=portfolio&sort=oldest"
+ * @param {"newest" | "oldest"} [defaultOrder]
  * @returns {{ query: string, order: "newest" | "oldest" }}
  */
-export const readListParams = (search) => {
+export const readListParams = (search, defaultOrder = "newest") => {
     const params = new URLSearchParams(search);
     const order = params.get("sort");
 
     return {
         query: (params.get("q") ?? "").trim(),
-        order: ORDERS.includes(order ?? "") ? /** @type {"newest" | "oldest"} */ (order) : "newest"
+        order: ORDERS.includes(order ?? "") ? /** @type {"newest" | "oldest"} */ (order) : defaultOrder
     };
 };
 
@@ -36,8 +37,9 @@ export const readListParams = (search) => {
  * @param {string} href
  * @param {string} query
  * @param {"newest" | "oldest"} order
+ * @param {"newest" | "oldest"} [defaultOrder]
  */
-export const listUrl = (href, query, order) => {
+export const listUrl = (href, query, order, defaultOrder = "newest") => {
     const url = new URL(href);
 
     if (query === "") {
@@ -46,7 +48,7 @@ export const listUrl = (href, query, order) => {
         url.searchParams.set("q", query);
     }
 
-    if (order === "newest") {
+    if (order === defaultOrder) {
         url.searchParams.delete("sort");
     } else {
         url.searchParams.set("sort", order);
@@ -97,6 +99,19 @@ export const playerUrl = (href, source, defaultSource) => {
     }
 
     return url.href;
+};
+
+/**
+ * The visible state of a player after its current frame has been shown.
+ * @param {{ source: string, elapsedMs: number, sawInstagramMessage: boolean }} options
+ * @returns {"loading" | "ready" | "slow"}
+ */
+export const playerState = ({ source, elapsedMs, sawInstagramMessage }) => {
+    if (source === "youtube" || sawInstagramMessage) {
+        return "ready";
+    }
+
+    return source === "instagram" && elapsedMs >= 10000 ? "slow" : "loading";
 };
 
 /**

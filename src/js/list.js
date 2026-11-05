@@ -24,9 +24,10 @@ export const initList = () => {
     const heading = document.getElementById("listing-heading");
     const headingText = heading?.textContent ?? "";
     const baseTitle = document.title;
+    const defaultOrder = list.dataset.defaultOrder === "oldest" ? "oldest" : "newest";
     let shownOrder = "newest";
 
-    const params = readListParams(window.location.search);
+    const params = readListParams(window.location.search, defaultOrder);
 
     if (input) {
         input.value = params.query;
@@ -94,7 +95,7 @@ export const initList = () => {
 
         document.title = query === "" ? baseTitle : `“${query}” | ${baseTitle}`;
 
-        const url = listUrl(window.location.href, query, order);
+        const url = listUrl(window.location.href, query, order, defaultOrder);
 
         if (url !== window.location.href) {
             window.history.replaceState(window.history.state, "", url);

@@ -2,7 +2,7 @@
  * The video player: switching between YouTube and Instagram, and Expand,
  * which grows the player to fill the window without reloading the video.
  */
-import { measuredHeight, playerUrl, requestedSource } from "./state.js";
+import { measuredHeight, playerState, playerUrl, requestedSource } from "./state.js";
 
 const NAMES = { youtube: "YouTube", instagram: "Instagram" };
 const INSTAGRAM_ORIGIN = "https://www.instagram.com";
@@ -51,6 +51,38 @@ export const initPlayer = () => {
     };
     const sourceButtons = [...player.querySelectorAll("[data-source-button]")];
     const expandButton = /** @type {HTMLButtonElement | null} */ (player.querySelector("[data-expand]"));
+    const frame = iframe.parentElement;
+    let status = /** @type {HTMLParagraphElement | null} */ (null);
+    let activeSource = "";
+    let shownAt = 0;
+    let sawInstagramMessage = false;
+    let slowTimer;
+
+    /** @param {string} source */
+    const updateState = (source) => {
+        const state = playerState({ source, elapsedMs: performance.now() - shownAt, sawInstagramMessage });
+        player.dataset.state = state;
+
+        if (state === "slow" && !status && frame) {
+            status = document.createElement("p");
+            status.className = "player__status";
+            status.setAttribute("data-player-status", "");
+            status.setAttribute("role", "status");
+            status.append("The Instagram player hasn't loaded. Instagram may be blocked on this network or by a browser extension. ");
+
+            const link = document.createElement("a");
+            const postUrl = new URL(sources.instagram);
+            postUrl.pathname = postUrl.pathname.replace(/embed\/?$/, "");
+            link.href = postUrl.href;
+            link.textContent = "Watch on Instagram";
+            status.append(link);
+            frame.after(status);
+        }
+
+        if (status) {
+            status.hidden = state !== "slow";
+        }
+    };
 
     /**
      * @param {string} source
@@ -76,6 +108,18 @@ export const initPlayer = () => {
             iframe = fresh;
         }
 
+        if (activeSource !== source) {
+            clearTimeout(slowTimer);
+            activeSource = source;
+            sawInstagramMessage = false;
+            shownAt = performance.now();
+            updateState(source);
+
+            if (source === "instagram") {
+                slowTimer = setTimeout(() => updateState(source), 10000);
+            }
+        }
+
         for (const button of sourceButtons) {
             button.setAttribute("aria-pressed", String(button.getAttribute("data-source-button") === source));
         }
@@ -87,9 +131,7 @@ export const initPlayer = () => {
 
     const requested = requestedSource(window.location.search, Object.keys(sources).filter((key) => sources[key]));
 
-    if (requested) {
-        show(requested, false);
-    }
+    show(requested ?? defaultSource, false);
 
     for (const button of sourceButtons) {
         button.addEventListener("click", () => show(button.getAttribute("data-source-button") ?? "", true));
@@ -104,7 +146,25 @@ export const initPlayer = () => {
             return;
         }
 
-        const height = measuredHeight(event.data);
+        let message = event.data;
+
+        if (typeof message === "string") {
+            try {
+                message = JSON.parse(message);
+            } catch {
+                return;
+            }
+        }
+
+        if (!message || (message.type !== "LOADING" && message.type !== "MEASURE")) {
+            return;
+        }
+
+        sawInstagramMessage = true;
+        clearTimeout(slowTimer);
+        updateState("instagram");
+
+        const height = measuredHeight(message);
 
         if (height !== null) {
             iframe.style.height = `${height}px`;
@@ -143,6 +203,7 @@ export const initPlayer = () => {
 
     expandButton.addEventListener("click", () => setExpanded(!isExpanded()));
 
+    // Escape cannot reach a focused cross-origin frame; Close and the backdrop click remain exits.
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && isExpanded()) {
             setExpanded(false);

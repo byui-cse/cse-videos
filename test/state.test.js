@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { backTarget, countText, listUrl, measuredHeight, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
+import { backTarget, countText, listUrl, measuredHeight, playerState, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
 
 describe("list address", () => {
     it("reads the search and order, falling back to newest first", () => {
@@ -14,6 +14,15 @@ describe("list address", () => {
         assert.equal(listUrl("https://x.org/?q=old", "", "newest"), "https://x.org/");
         assert.equal(listUrl("https://x.org/", "c++ & c#", "oldest"), "https://x.org/?q=c%2B%2B+%26+c%23&sort=oldest");
         assert.equal(listUrl("https://x.org/tags/ai/?ref=mail", "", "oldest"), "https://x.org/tags/ai/?ref=mail&sort=oldest");
+    });
+
+    it("uses an oldest-first page default when reading and writing the address", () => {
+        assert.deepEqual(readListParams("", "oldest"), { query: "", order: "oldest" });
+        assert.deepEqual(readListParams("?sort=newest", "oldest"), { query: "", order: "newest" });
+        assert.deepEqual(readListParams("?sort=oldest", "oldest"), { query: "", order: "oldest" });
+        assert.deepEqual(readListParams("?sort=invalid", "oldest"), { query: "", order: "oldest" });
+        assert.equal(listUrl("https://x.org/tags/career-quest/", "", "newest", "oldest"), "https://x.org/tags/career-quest/?sort=newest");
+        assert.equal(listUrl("https://x.org/tags/career-quest/?sort=oldest", "", "oldest", "oldest"), "https://x.org/tags/career-quest/");
     });
 
     it("words the results count", () => {
@@ -74,6 +83,15 @@ describe("back link", () => {
 });
 
 describe("player address", () => {
+    it("tracks loading, slow, and ready player states", () => {
+        assert.equal(playerState({ source: "instagram", elapsedMs: 0, sawInstagramMessage: false }), "loading");
+        assert.equal(playerState({ source: "instagram", elapsedMs: 9999, sawInstagramMessage: false }), "loading");
+        assert.equal(playerState({ source: "instagram", elapsedMs: 10000, sawInstagramMessage: false }), "slow");
+        assert.equal(playerState({ source: "instagram", elapsedMs: 500, sawInstagramMessage: true }), "ready");
+        assert.equal(playerState({ source: "instagram", elapsedMs: 15000, sawInstagramMessage: true }), "ready");
+        assert.equal(playerState({ source: "youtube", elapsedMs: 15000, sawInstagramMessage: false }), "ready");
+    });
+
     it("honors ?source= only for a player this video has", () => {
         assert.equal(requestedSource("?source=instagram", ["youtube", "instagram"]), "instagram");
         assert.equal(requestedSource("?source=youtube", ["instagram"]), null);
