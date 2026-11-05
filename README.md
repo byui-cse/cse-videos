@@ -39,7 +39,7 @@ Everything is in the address, so any view can be shared by copying the link.
 ## Adding a video
 
 1. On github.com, open [`data/videos.json`](data/videos.json) and click the pencil. Paste the template below right after the opening `[`, including its trailing comma, then replace the example values. The site sorts by date, so position in the file does not matter.
-2. Commit the edit to a new branch. On that same branch, open `src/covers/` and use **Add file > Upload files** to add a 480×750 JPEG under 150 KB named `<id>.jpg`. On a Mac, resize with `sips -z 750 480 in.jpg --out <id>.jpg` (replace `<id>` with the video's id), then check the file size.
+2. Commit the edit to a new branch. On that same branch, open `src/covers/` and use **Add file > Upload files** to add a 480×750 JPEG under 150 KB named `<id>.jpg`. On a Mac, make one from a still of the reel (JPEG, PNG or HEIC, taller than 480:750 as reel frames are) with `sips -s format jpeg --resampleWidth 480 -c 750 480 still.png --out <id>.jpg`, replacing `still.png` with your file and `<id>` with the video's id. It scales the still to 480 wide and trims the top and bottom to 750.
 3. Open a pull request from your branch. The checks run on their own. If you see a red X, click **Details** to read what needs fixing, then edit the files on the same branch.
 
 ```json
@@ -50,19 +50,19 @@ Everything is in the address, so any view can be shared by copying the link.
     "instagram": "https://www.instagram.com/reel/POST_CODE/",
     "length": "1:05",
     "datePosted": "2026-10-19",
-    "tags": ["career-quest", "job-search"],
     "series": "career-quest",
-    "part": 1
+    "part": 1,
+    "tags": ["career-quest", "job-search"]
 },
 ```
 
-Use a unique id and reel link. For a standalone video, remove both `series` and `part`.
+Use a unique id and reel link. For a standalone video, delete the `series` and `part` lines.
 
 | Field | Required | Format |
 | --- | --- | --- |
 | `id` | Yes | Unique lowercase words joined by hyphens; used in the video's link, so don't change it once live. |
 | `title` | Yes | The video's title. |
-| `description` | No | The Instagram caption without hashtags; write `\n` for a line break or `\n\n` for a new paragraph. |
+| `description` | No | The Instagram caption without hashtags; write `\n` for a line break, `\n\n` for a new paragraph, and `\"` for a double quote. |
 | `instagram` | Yes, unless using YouTube | An https Instagram post or reel link. |
 | `length` | No | `m:ss` or `h:mm:ss`. |
 | `attributions` | No | A list of credits; links may use `[text](https://url)`. |

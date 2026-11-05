@@ -54,6 +54,8 @@ describe("structured data", () => {
 
         const captionOnly = videoObject({ video: { description: "Only a caption" } });
         assert.equal(captionOnly.description, "Only a caption");
+        const linked = videoObject({ video: { description: "Thanks to [Jane](https://example.com/jane)" } });
+        assert.equal(linked.description, "Thanks to Jane");
         assert.ok(!Object.hasOwn(captionOnly, "name"));
     });
 

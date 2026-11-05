@@ -217,6 +217,19 @@ describe("data hygiene", () => {
         }
     });
 
+    it("suggests only close tags from the real tag list", async () => {
+        const names = JSON.parse(await fs.readFile(new URL("../data/tags.json", import.meta.url), "utf8"));
+        const suggestion = (tag) => validateVideos([video({ tags: [tag] })], names)[0]?.match(/Did you mean "([^"]+)"/)?.[1] ?? null;
+
+        assert.equal(suggestion("ux"), null);
+        assert.equal(suggestion("cs"), null);
+        assert.equal(suggestion("ml"), null);
+        assert.equal(suggestion("internship"), "internships");
+        assert.equal(suggestion("netwroking"), "networking");
+        assert.equal(suggestion("ia"), "ai");
+        assert.equal(suggestion("resumes"), "resume");
+    });
+
     it("suggests known tags by prefix and edit distance", () => {
         for (const tag of ["internship", "internshps"]) {
             assert.deepEqual(validateVideos([video({ tags: [tag] })], { internships: "Internships" }), [
@@ -236,6 +249,17 @@ describe("data hygiene", () => {
             ]);
         }
         assert.deepEqual(validateVideos([video({ attributions: ["[A & B](https://example.com/A_(B))"] })]), []);
+
+        for (const credit of ["[name] (https://example.com)", "name](https://example.com)", "[name(https://example.com)"]) {
+            assert.equal(validateVideos([video({ attributions: [credit] })]).length, 1, credit);
+        }
+    });
+
+    it("accepts plain square brackets in credits", () => {
+        for (const credit of ["Song: Elektronomia - Sky High [NCS Release]", "Music: Some Artist - Song [Remix]",
+            "Photo [cropped] by [Jane](https://example.com/jane)"]) {
+            assert.deepEqual(validateVideos([video({ attributions: [credit] })]), [], credit);
+        }
     });
 
     it("checks missing, misnamed, malformed, oversized and incorrectly shaped covers", async (t) => {
