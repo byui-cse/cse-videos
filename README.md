@@ -36,6 +36,8 @@ Everything is in the address, so any view can be shared by copying the link.
 | `/videos/career-quest-part-1/` | One video and its player |
 | `/videos/career-quest-part-1/?source=instagram` | The same video, playing from Instagram instead of YouTube |
 
+Pressing YouTube or Instagram under a video, or in the "Play videos on" switch in the header (shown once any video has both links), also sets a soft preference: later videos open on that player when they have it, and a video on only the other one plays there with a short "Only on Instagram" or "Only on YouTube" note. The preference is kept in this browser only and is never added to the address, so a shared link with `?source=` still opens on the player it names.
+
 ## Adding a video
 
 1. On github.com, open [`data/videos.json`](data/videos.json) and click the pencil. Paste the template below right after the opening `[`, including its trailing comma, then replace the example values. The site sorts by date, so position in the file does not matter.

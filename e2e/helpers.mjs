@@ -14,8 +14,12 @@ const types = {
 export const videos = JSON.parse(await readFile(new URL("../data/videos.json", import.meta.url)));
 export const tagNames = JSON.parse(await readFile(new URL("../data/tags.json", import.meta.url)));
 
-/** Build and serve the real site with directory redirects and a custom 404. */
-export const startSite = async () => {
+/**
+ * Build and serve the site with directory redirects and a custom 404. With no
+ * options it is the real site; dataFile and tagsFile build it from other data.
+ * @param {{ dataFile?: string, tagsFile?: string }} [options]
+ */
+export const startSite = async ({ dataFile, tagsFile } = {}) => {
     const directory = await mkdtemp(path.join(tmpdir(), "cse-browser-"));
     const outDir = path.resolve(directory, "site");
     let browser;
@@ -34,7 +38,7 @@ export const startSite = async () => {
         }
     };
     try {
-        await build({ outDir, siteUrl: "" });
+        await build({ outDir, siteUrl: "", dataFile, tagsFile });
         server = createServer(async (request, response) => {
             try {
                 const url = new URL(request.url, "http://localhost");

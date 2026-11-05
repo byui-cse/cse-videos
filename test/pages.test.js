@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
-import { tagPage, videoPage } from "../lib/render.js";
+import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
 import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
@@ -281,6 +281,44 @@ describe("every page", () => {
             assert.match(page, /fonts\/source-sans-3-latin-wght-normal\.woff2" as="font"/, file);
             assert.match(page, /fonts\/source-serif-4-latin-wght-normal\.woff2" as="font"/, file);
         }
+    });
+});
+
+describe("player preference switch", () => {
+    const header = (page) => page.slice(page.indexOf('<header class="site-header">'), page.indexOf("</header>"));
+    const siteOf = (videos) => ({ videos, tags: [], names: {}, covers: new Map(), siteUrl: null });
+
+    it("is in every page's header, hidden until JavaScript runs, once some video has both links", async () => {
+        assert.ok(VIDEOS.some((video) => video.youtube && video.instagram));
+
+        for (const file of ["index.html", "tags/index.html", "tags/ai/index.html", "videos/lecture/index.html", "videos/older-reel/index.html", "404.html"]) {
+            const part = header(await read(file));
+            assert.match(part, /<div class="source-preference" role="group" aria-labelledby="play-videos-on" data-source-preference data-needs-js hidden>/, file);
+            assert.match(part, /<span class="source-preference__label" id="play-videos-on">Play videos on<\/span>/, file);
+            assert.match(part, /<button class="source-preference__button" type="button" data-preference-button="youtube" aria-pressed="false">YouTube<\/button>/, file);
+            assert.match(part, /<button class="source-preference__button" type="button" data-preference-button="instagram" aria-pressed="false">Instagram<\/button>/, file);
+            assert.equal(part.match(/data-preference-button=/g).length, 2, file);
+        }
+    });
+
+    it("is left out when no video has both links", () => {
+        const videos = VIDEOS.filter((video) => !(video.youtube && video.instagram));
+        assert.deepEqual(videos.map((video) => video.id), ["older-reel", "lecture"]);
+        const site = siteOf(videos);
+        const pages = [homePage(site), tagsPage(site), tagPage(site, { slug: "ai", name: "AI", count: 1 }), notFoundPage(site), ...videos.map((video) => videoPage(site, video))];
+
+        for (const page of pages) {
+            assert.ok(page.includes('<header class="site-header">'));
+            assert.ok(!page.includes("data-source-preference"));
+            assert.ok(!page.includes("data-preference-button"));
+            assert.ok(!page.includes("Play videos on"));
+        }
+    });
+
+    it("appears for a single video with both links among many without", () => {
+        const site = siteOf([VIDEOS[1], VIDEOS[2], VIDEOS[0]]);
+        assert.match(header(videoPage(site, VIDEOS[1])), /data-source-preference/);
+        assert.match(header(homePage(site)), /data-source-preference/);
     });
 });
 

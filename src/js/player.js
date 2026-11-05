@@ -1,8 +1,10 @@
 /**
- * The video player: switching between YouTube and Instagram, and Expand,
- * which grows the player to fill the window without reloading the video.
+ * The video player: opening on the viewer's preferred player, switching
+ * between YouTube and Instagram, and Expand, which grows the player to fill
+ * the window without reloading the video.
  */
-import { measuredHeight, playerState, playerUrl, requestedSource } from "./state.js";
+import { readPreference, savePreference } from "./preference.js";
+import { chooseSource, measuredHeight, onlySource, playerState, playerUrl, requestedSource } from "./state.js";
 
 const NAMES = { youtube: "YouTube", instagram: "Instagram" };
 const INSTAGRAM_ORIGIN = "https://www.instagram.com";
@@ -35,12 +37,17 @@ const isolate = (element) => {
     };
 };
 
+/**
+ * Starts the player on a video page. Returns a hook for a preference chosen
+ * elsewhere on the page, or null on pages without a player.
+ * @returns {{ prefer: (source: string) => void } | null}
+ */
 export const initPlayer = () => {
     const player = /** @type {HTMLElement | null} */ (document.querySelector("[data-player]"));
     let iframe = /** @type {HTMLIFrameElement | null} */ (player?.querySelector("iframe"));
 
     if (!player || !iframe) {
-        return;
+        return null;
     }
 
     const title = player.dataset.title ?? "Video";
@@ -49,10 +56,12 @@ export const initPlayer = () => {
         youtube: player.dataset.youtubeSrc,
         instagram: player.dataset.instagramSrc
     };
+    const available = Object.keys(sources).filter((key) => sources[key]);
     const sourceButtons = [...player.querySelectorAll("[data-source-button]")];
     const expandButton = /** @type {HTMLButtonElement | null} */ (player.querySelector("[data-expand]"));
     const frame = iframe.parentElement;
     let status = /** @type {HTMLParagraphElement | null} */ (null);
+    let note = /** @type {HTMLParagraphElement | null} */ (null);
     let activeSource = "";
     let shownAt = 0;
     let sawInstagramMessage = false;
@@ -131,13 +140,61 @@ export const initPlayer = () => {
         }
     };
 
-    const requested = requestedSource(window.location.search, Object.keys(sources).filter((key) => sources[key]));
+    /**
+     * "Only on Instagram" beside the controls when the viewer prefers the
+     * player this video doesn't have, so they know why it wasn't used.
+     * @param {string | null} preferred
+     */
+    const updateNote = (preferred) => {
+        const only = onlySource({ preferred, available });
 
-    show(requested ?? defaultSource, false);
+        if (only && !note) {
+            note = document.createElement("p");
+            note.className = "player__note";
+            note.setAttribute("data-player-note", "");
+            note.setAttribute("role", "status");
+            (expandButton ?? frame)?.before(note);
+        }
+
+        if (note) {
+            note.textContent = only ? `Only on ${NAMES[only]}` : "";
+            note.hidden = !only;
+        }
+    };
+
+    // Opening on the preference leaves the address alone: the preference
+    // belongs to this browser, and a link with ?source= plays what it names.
+    const preferred = readPreference();
+    const chosen = chooseSource({
+        requested: requestedSource(window.location.search, available),
+        preferred,
+        available,
+        fallback: defaultSource
+    });
+
+    show(chosen ?? defaultSource, false);
+    updateNote(preferred);
 
     for (const button of sourceButtons) {
-        button.addEventListener("click", () => show(button.getAttribute("data-source-button") ?? "", true));
+        button.addEventListener("click", () => {
+            const source = button.getAttribute("data-source-button") ?? "";
+            show(source, true);
+            // A soft preference: later videos open on this player when they have it.
+            savePreference(source);
+        });
     }
+
+    const hook = {
+        /**
+         * A preference chosen in the header: switches to it when this video
+         * has it, and otherwise says which player the video is on.
+         * @param {string} source
+         */
+        prefer: (source) => {
+            show(source, true);
+            updateNote(source);
+        }
+    };
 
     /**
      * A message from Instagram's player. It posts its height to the page;
@@ -188,7 +245,7 @@ export const initPlayer = () => {
     });
 
     if (!expandButton) {
-        return;
+        return hook;
     }
 
     let restore = null;
@@ -232,4 +289,6 @@ export const initPlayer = () => {
             setExpanded(false);
         }
     });
+
+    return hook;
 };

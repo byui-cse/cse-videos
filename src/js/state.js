@@ -73,6 +73,37 @@ export const countText = (shown, total, query) => {
 };
 
 /**
+ * True for "youtube" or "instagram".
+ * @param {unknown} value
+ * @returns {value is "youtube" | "instagram"}
+ */
+export const isSource = (value) => typeof value === "string" && SOURCES.includes(value);
+
+/**
+ * The player a video page opens on. A ?source= request this video has wins,
+ * so a shared link plays what its sender saw; then the viewer's saved
+ * preference, if this video has it; then the page's default. Never a source
+ * the video lacks.
+ * @param {{ requested: string | null, preferred: string | null, available: string[], fallback: string }} options
+ * @returns {string | null}
+ */
+export const chooseSource = ({ requested, preferred, available, fallback }) => {
+    const usable = available.filter(isSource);
+    return [requested, preferred, fallback].find((source) => isSource(source) && usable.includes(source)) ?? usable[0] ?? null;
+};
+
+/**
+ * The one player a video has when the viewer prefers the other, so the page
+ * can say why the preference wasn't used. Null otherwise.
+ * @param {{ preferred: string | null, available: string[] }} options
+ * @returns {string | null}
+ */
+export const onlySource = ({ preferred, available }) => {
+    const usable = available.filter(isSource);
+    return usable.length === 1 && isSource(preferred) && usable[0] !== preferred ? usable[0] : null;
+};
+
+/**
  * The player a link asks for with ?source=, if this video has it.
  * @param {string} search
  * @param {string[]} available

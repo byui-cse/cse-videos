@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { after, before, describe, test } from "node:test";
 import { smartQuotes } from "../lib/html.js";
 import { instagramCode } from "../lib/videos.js";
 import { startSite, tagNames, videos } from "./helpers.mjs";
@@ -366,3 +369,248 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }
         });
     }
 }
+
+test("the real data has no video on both players, so the header has no player switch", async (t) => {
+    const { page } = await site.page(t);
+    for (const route of ["/", videoPath]) {
+        await page.goto(route);
+        assert.equal(await page.locator("[data-source-preference]").count(), 0, route);
+    }
+});
+
+describe("player preference", () => {
+    // The real data has no YouTube links yet, so these build the site from a
+    // small list: two videos on both players, a reel (named after a real cover
+    // file, which a reel needs), and a YouTube-only video.
+    const mixedVideos = [
+        { id: "on-both", title: "On both", youtube: "https://www.youtube.com/watch?v=abcdefghijk", instagram: "https://www.instagram.com/reel/BOTHONE/", datePosted: "2026-10-04", tags: ["job-search"] },
+        { id: "also-on-both", title: "Also on both", youtube: "https://www.youtube.com/shorts/bcdefghijkl", instagram: "https://www.instagram.com/reel/BOTHTWO/", datePosted: "2026-10-03", tags: ["job-search"] },
+        { id: "career-quest-part-1", title: "Only a reel", instagram: "https://www.instagram.com/reel/REELONLY/", datePosted: "2026-10-02", tags: ["job-search"] },
+        { id: "only-youtube", title: "Only on YouTube", youtube: "https://www.youtube.com/watch?v=cdefghijklm", datePosted: "2026-10-01", tags: ["job-search"] }
+    ];
+    const KEY = "cse-videos:source";
+    let dataDir;
+    let mixed;
+
+    before(async () => {
+        dataDir = await mkdtemp(path.join(tmpdir(), "cse-preference-"));
+        const dataFile = path.join(dataDir, "videos.json");
+        await writeFile(dataFile, JSON.stringify(mixedVideos));
+        mixed = await startSite({ dataFile });
+    });
+    after(async () => {
+        await mixed?.close();
+        await rm(dataDir, { recursive: true, force: true });
+    });
+
+    const playing = (page) => page.locator("[data-player]").getAttribute("data-source");
+    const frameHost = async (page) => new URL(await page.locator("[data-player] iframe").getAttribute("src")).hostname;
+    const watchOn = (page, name) => page.getByRole("group", { name: "Watch on" }).getByRole("button", { name, exact: true });
+    const playOn = (page, name) => page.getByRole("group", { name: "Play videos on" }).getByRole("button", { name, exact: true });
+    const pressed = async (page) => page.getByRole("group", { name: "Play videos on" }).getByRole("button")
+        .evaluateAll((buttons) => buttons.map((button) => `${button.textContent} ${button.getAttribute("aria-pressed")}`));
+    const note = (page) => page.locator("[data-player-note]");
+    const search = (page) => new URL(page.url()).search;
+
+    test("the Watch on buttons save a preference that the next video opens on", async (t) => {
+        const { page } = await mixed.page(t);
+        await page.goto("/videos/on-both/");
+        assert.equal(await playing(page), "youtube");
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram false"]);
+
+        await watchOn(page, "Instagram").click();
+        assert.equal(await playing(page), "instagram");
+        assert.equal(await frameHost(page), "www.instagram.com");
+        assert.equal(search(page), "?source=instagram");
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram true"]);
+        assert.deepEqual(await page.evaluate(() => ({ ...localStorage })), { [KEY]: "instagram" });
+
+        // The preference itself stays out of the address.
+        await page.goto("/videos/also-on-both/");
+        assert.equal(await playing(page), "instagram");
+        assert.equal(await frameHost(page), "www.instagram.com");
+        assert.equal(search(page), "");
+        assert.equal(await watchOn(page, "Instagram").getAttribute("aria-pressed"), "true");
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram true"]);
+
+        await watchOn(page, "YouTube").click();
+        assert.equal(search(page), "");
+        await page.goto("/videos/on-both/");
+        assert.equal(await playing(page), "youtube");
+        assert.deepEqual(await pressed(page), ["YouTube true", "Instagram false"]);
+    });
+
+    test("the header switch saves a preference, switches the player in place, and the next video opens on it", async (t) => {
+        const { page } = await mixed.page(t);
+        await page.goto("/");
+        assert.equal(await page.getByRole("group", { name: "Play videos on" }).isVisible(), true);
+        await playOn(page, "Instagram").click();
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram true"]);
+
+        await page.goto("/videos/on-both/");
+        assert.equal(await playing(page), "instagram");
+        assert.equal(search(page), "");
+
+        // On a video with both players it switches without reloading the page.
+        await page.evaluate(() => { window.samePage = true; });
+        await playOn(page, "YouTube").click();
+        assert.equal(await playing(page), "youtube");
+        assert.equal(await frameHost(page), "www.youtube-nocookie.com");
+        assert.equal(await watchOn(page, "YouTube").getAttribute("aria-pressed"), "true");
+        assert.deepEqual(await pressed(page), ["YouTube true", "Instagram false"]);
+        assert.equal(await page.evaluate(() => window.samePage), true);
+        assert.equal(search(page), "");
+
+        await playOn(page, "Instagram").click();
+        assert.equal(await playing(page), "instagram");
+        assert.equal(search(page), "?source=instagram");
+        assert.equal(await page.evaluate(() => window.samePage), true);
+
+        await page.goto("/videos/also-on-both/");
+        assert.equal(await playing(page), "instagram");
+    });
+
+    test("a link's ?source= wins over the preference and leaves it as it was", async (t) => {
+        const { page } = await mixed.page(t);
+        await page.goto("/");
+        await playOn(page, "Instagram").click();
+
+        await page.goto("/videos/on-both/?source=youtube");
+        assert.equal(await playing(page), "youtube");
+        assert.equal(await frameHost(page), "www.youtube-nocookie.com");
+        assert.equal(search(page), "?source=youtube");
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram true"]);
+
+        await page.goto("/videos/on-both/");
+        assert.equal(await playing(page), "instagram");
+
+        await playOn(page, "YouTube").click();
+        await page.goto("/videos/also-on-both/?source=instagram");
+        assert.equal(await playing(page), "instagram");
+        assert.deepEqual(await pressed(page), ["YouTube true", "Instagram false"]);
+    });
+
+    test("a video on one player plays there and says so when the viewer prefers the other", async (t) => {
+        const { page } = await mixed.page(t);
+
+        // With no preference nothing changes.
+        await page.goto("/videos/career-quest-part-1/");
+        assert.equal(await playing(page), "instagram");
+        assert.equal(await note(page).count(), 0);
+
+        await playOn(page, "YouTube").click();
+        assert.equal(await playing(page), "instagram");
+        assert.equal(search(page), "");
+        assert.equal(await note(page).textContent(), "Only on Instagram");
+        assert.equal(await note(page).isVisible(), true);
+
+        await page.reload();
+        assert.equal(await playing(page), "instagram");
+        assert.equal(await note(page).textContent(), "Only on Instagram");
+        assert.equal(await note(page).isVisible(), true);
+        assert.equal(await note(page).evaluate((node) => node.closest("[data-player]") !== null), true);
+        const [noteBox, frameBox] = [await note(page).boundingBox(), await page.locator("[data-player] iframe").boundingBox()];
+        assert.ok(noteBox.y + noteBox.height <= frameBox.y, "the note sits with the controls above the video");
+
+        await playOn(page, "Instagram").click();
+        assert.equal(await note(page).isVisible(), false);
+        await page.reload();
+        assert.equal(await note(page).count(), 0);
+
+        await page.goto("/videos/only-youtube/");
+        assert.equal(await playing(page), "youtube");
+        assert.equal(await note(page).textContent(), "Only on YouTube");
+    });
+
+    test("an unknown stored value counts as no preference", async (t) => {
+        const { page } = await mixed.page(t);
+        await page.goto("/");
+        await page.evaluate((key) => localStorage.setItem(key, "tiktok"), KEY);
+        await page.goto("/videos/on-both/");
+        assert.equal(await playing(page), "youtube");
+        assert.deepEqual(await pressed(page), ["YouTube false", "Instagram false"]);
+        await page.goto("/videos/career-quest-part-1/");
+        assert.equal(await note(page).count(), 0);
+    });
+
+    const blockers = {
+        "storage itself throws": () => {
+            Object.defineProperty(window, "localStorage", {
+                configurable: true,
+                get() {
+                    throw new DOMException("The operation is insecure.", "SecurityError");
+                }
+            });
+        },
+        "reads and writes throw": () => {
+            Storage.prototype.getItem = () => {
+                throw new DOMException("The operation is insecure.", "SecurityError");
+            };
+            Storage.prototype.setItem = () => {
+                throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+            };
+        }
+    };
+
+    for (const [name, block] of Object.entries(blockers)) {
+        test(`the player and switch still work when ${name}`, async (t) => {
+            const { page } = await mixed.page(t);
+            const errors = [];
+            page.on("pageerror", (error) => errors.push(error.message));
+            await page.addInitScript(block);
+
+            await page.goto("/videos/on-both/");
+            assert.equal(await playing(page), "youtube");
+            assert.deepEqual(await pressed(page), ["YouTube false", "Instagram false"]);
+
+            await watchOn(page, "Instagram").click();
+            assert.equal(await playing(page), "instagram");
+            assert.equal(search(page), "?source=instagram");
+            assert.deepEqual(await pressed(page), ["YouTube false", "Instagram true"]);
+
+            await playOn(page, "YouTube").click();
+            assert.equal(await playing(page), "youtube");
+            assert.equal(search(page), "");
+            assert.deepEqual(await pressed(page), ["YouTube true", "Instagram false"]);
+
+            // Nothing could be kept, so the next video opens on its default.
+            await page.goto("/videos/also-on-both/");
+            assert.equal(await playing(page), "youtube");
+            assert.deepEqual(await pressed(page), ["YouTube false", "Instagram false"]);
+
+            await page.goto("/videos/career-quest-part-1/");
+            await playOn(page, "YouTube").click();
+            assert.equal(await note(page).textContent(), "Only on Instagram");
+            assert.deepEqual(errors, []);
+        });
+    }
+
+    for (const route of ["/", "/videos/on-both/", "/videos/career-quest-part-1/"]) {
+        test(`no page or console errors with the switch on ${route}`, async (t) => {
+            const { page, aborted } = await mixed.page(t);
+            const errors = [];
+            page.on("pageerror", (error) => errors.push(error.message));
+            page.on("console", (message) => {
+                if (message.type() === "error" && !(aborted.has(message.location().url)
+                    && /net::ERR_FAILED|net::ERR_ABORTED/.test(message.text()))) {
+                    errors.push(message.text());
+                }
+            });
+            await page.goto(route);
+            await playOn(page, "Instagram").click();
+            await page.evaluate(() => document.fonts.ready);
+            assert.deepEqual(errors, []);
+        });
+
+        for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+            test(`no horizontal overflow with the switch at ${viewport.width}x${viewport.height} on ${route}`, async (t) => {
+                const { page } = await mixed.page(t, { viewport });
+                await page.goto(route);
+                await page.evaluate(() => document.fonts.ready);
+                assert.equal(await page.getByRole("group", { name: "Play videos on" }).isVisible(), true);
+                const dimensions = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
+                assert.ok(dimensions.scroll <= dimensions.width, JSON.stringify(dimensions));
+            });
+        }
+    }
+});

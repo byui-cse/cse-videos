@@ -1,6 +1,7 @@
 /**
- * Site header: the site name, the department it belongs to, and the two
- * places to go. Both links fit at every width, so there is no menu button.
+ * Site header: the site name, the department it belongs to, the two places
+ * to go, and, once some video is on both players, the choice of player. Both
+ * links fit at every width, so there is no menu button.
  */
 .site-header {
 	border-block-end: 1px solid var(--color-line);
@@ -80,5 +81,51 @@
 	&.site-nav__link--section {
 		color: var(--color-link);
 		text-decoration-line: underline;
+	}
+}
+
+/* "Play videos on", shown only when some video is on both players. It drops
+   to its own line on phones; on the narrowest the two buttons move under
+   the label together. */
+.source-preference {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-xs);
+	font-family: var(--font-ui);
+}
+
+.source-preference__label {
+	margin-inline-end: var(--space-2xs);
+	color: var(--color-muted);
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+}
+
+.source-preference__buttons {
+	display: inline-flex;
+	gap: var(--space-xs);
+}
+
+/* The same as the player's Watch on buttons. */
+.source-preference__button {
+	min-height: var(--touch-min);
+	padding: 0.4rem 0.9rem;
+	border: 1px solid var(--color-muted);
+	border-radius: 3px;
+	background: var(--color-surface);
+	color: var(--color-ink);
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+
+	&:hover {
+		border-color: var(--color-ink);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: var(--color-ink);
+		background: var(--color-ink);
+		color: var(--color-paper);
 	}
 }

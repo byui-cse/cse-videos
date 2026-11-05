@@ -104,6 +104,16 @@
 	font-size: var(--text-sm);
 }
 
+/* "Only on Instagram" beside Expand, when the viewer prefers the player this
+   video doesn't have. */
+.player__note {
+	margin: 0;
+	color: var(--color-muted);
+	font-family: var(--font-ui);
+	font-size: var(--text-min);
+	font-weight: var(--weight-semibold);
+}
+
 .player__source {
 	min-height: var(--touch-min);
 	padding: 0.4rem 0.9rem;
@@ -161,7 +171,8 @@
 	}
 
 	.player__sources-label,
-	.player__status {
+	.player__status,
+	.player__note {
 		color: #c9d3dd;
 	}
 

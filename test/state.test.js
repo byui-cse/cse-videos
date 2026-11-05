@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { backTarget, countText, isPlainClick, listUrl, measuredHeight, playerState, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
+import {
+    backTarget,
+    chooseSource,
+    countText,
+    isPlainClick,
+    isSource,
+    listUrl,
+    measuredHeight,
+    onlySource,
+    playerState,
+    playerUrl,
+    plural,
+    readListParams,
+    requestedSource,
+    shareMode
+} from "../src/js/state.js";
 
 describe("list address", () => {
     it("reads the search and order, falling back to newest first", () => {
@@ -109,6 +124,14 @@ describe("player address", () => {
         assert.equal(requestedSource("", ["youtube"]), null);
     });
 
+    it("knows only YouTube and Instagram as players", () => {
+        assert.equal(isSource("youtube"), true);
+        assert.equal(isSource("instagram"), true);
+        for (const value of ["", "YouTube", "tiktok", "constructor", "toString", null, undefined, 1, {}]) {
+            assert.equal(isSource(value), false, String(value));
+        }
+    });
+
     it("leaves the default player out of the address", () => {
         assert.equal(playerUrl("https://x.org/videos/a/", "instagram", "youtube"), "https://x.org/videos/a/?source=instagram");
         assert.equal(playerUrl("https://x.org/videos/a/?source=instagram", "youtube", "youtube"), "https://x.org/videos/a/");
@@ -122,5 +145,54 @@ describe("player address", () => {
         assert.equal(measuredHeight('{"details":{"height":"tall"},"type":"MEASURE"}'), null);
         assert.equal(measuredHeight("not json"), null);
         assert.equal(measuredHeight(null), null);
+    });
+});
+
+describe("player preference", () => {
+    const both = ["youtube", "instagram"];
+    const choose = (options) => chooseSource({ requested: null, preferred: null, available: both, fallback: "youtube", ...options });
+
+    it("plays a ?source= request the video has, over the preference", () => {
+        assert.equal(choose({ requested: "youtube", preferred: "instagram" }), "youtube");
+        assert.equal(choose({ requested: "instagram", preferred: "youtube" }), "instagram");
+        assert.equal(choose({ requested: "instagram" }), "instagram");
+    });
+
+    it("skips a request the video lacks and uses the preference", () => {
+        assert.equal(choose({ requested: "youtube", preferred: "instagram", available: ["instagram"], fallback: "instagram" }), "instagram");
+        assert.equal(choose({ requested: "evil", preferred: "instagram" }), "instagram");
+    });
+
+    it("uses the preference when the video has it and nothing is requested", () => {
+        assert.equal(choose({ preferred: "instagram" }), "instagram");
+        assert.equal(choose({ preferred: "youtube", fallback: "instagram" }), "youtube");
+    });
+
+    it("falls back to the page's default without a usable preference", () => {
+        assert.equal(choose({}), "youtube");
+        assert.equal(choose({ preferred: "youtube", available: ["instagram"], fallback: "instagram" }), "instagram");
+        assert.equal(choose({ preferred: "instagram", available: ["youtube"] }), "youtube");
+        assert.equal(choose({ preferred: "tiktok" }), "youtube");
+        assert.equal(choose({ preferred: "constructor", requested: "toString" }), "youtube");
+    });
+
+    it("never picks a player the video lacks", () => {
+        assert.equal(choose({ available: ["instagram"], fallback: "youtube" }), "instagram");
+        assert.equal(choose({ requested: "youtube", preferred: "youtube", available: ["instagram"], fallback: "youtube" }), "instagram");
+        assert.equal(choose({ available: ["vimeo", "instagram"], fallback: "vimeo" }), "instagram");
+        assert.equal(choose({ requested: "youtube", preferred: "youtube", available: [], fallback: "youtube" }), null);
+    });
+
+    it("names the one player a video is on when the viewer prefers the other", () => {
+        assert.equal(onlySource({ preferred: "youtube", available: ["instagram"] }), "instagram");
+        assert.equal(onlySource({ preferred: "instagram", available: ["youtube"] }), "youtube");
+    });
+
+    it("says nothing when the preference was used, is missing, or the video has both", () => {
+        assert.equal(onlySource({ preferred: "instagram", available: ["instagram"] }), null);
+        assert.equal(onlySource({ preferred: null, available: ["instagram"] }), null);
+        assert.equal(onlySource({ preferred: "evil", available: ["instagram"] }), null);
+        assert.equal(onlySource({ preferred: "youtube", available: both }), null);
+        assert.equal(onlySource({ preferred: "youtube", available: [] }), null);
     });
 });
