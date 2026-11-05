@@ -1,0 +1,58 @@
+/**
+ * "Play videos on: YouTube | Instagram" at the right end of the utility bar,
+ * the chosen player underlined in gold. Under 1100 px it takes its own line
+ * in the bar. Only rendered once some video is on both players.
+ */
+.source-preference {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: #fff;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.source-preference__label::after {
+	content: ":";
+}
+
+.source-preference__label {
+	margin-right: 2px;
+}
+
+.source-preference__divider {
+	opacity: 0.6;
+}
+
+.source-preference__button {
+	min-height: 36px;
+	padding: 0 4px;
+	border: 0;
+	background: none;
+	color: #fff;
+	cursor: pointer;
+}
+
+.source-preference__button[aria-pressed="true"] {
+	text-decoration: underline 2px var(--gold);
+	text-underline-offset: 6px;
+}
+
+@media (min-width: 1100px) {
+	.source-preference {
+		height: 20px;
+		padding-left: 24px;
+		border-left: 1px solid rgb(255 255 255 / 45%);
+	}
+}
+
+@media (max-width: 1099px) {
+	.source-preference {
+		flex-basis: 100%;
+		justify-content: flex-end;
+	}
+
+	.source-preference__button {
+		min-height: 44px;
+	}
+}

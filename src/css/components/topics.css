@@ -1,0 +1,250 @@
+/**
+ * Topics two ways. On the home page, a directory: four columns of small rows,
+ * each a 96 px still, the name as the link, the count and running time. On
+ * the topics page, photo cards in six columns like the index, the two most
+ * used topics taking two cells and two reels.
+ */
+.topics {
+	padding: 128px 0;
+	border-top: 1px solid var(--line);
+	background: var(--surface);
+}
+
+.topics--page {
+	padding: 72px 0 136px;
+	border-top: 0;
+}
+
+.topic-list {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 24px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.topic-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	padding-bottom: 24px;
+	border-bottom: 1px solid var(--line);
+}
+
+.topic-row__image {
+	flex: 0 0 96px;
+	aspect-ratio: 480 / 750;
+	overflow: hidden;
+	border-radius: 0;
+	background: var(--tint);
+}
+
+.topic-row__image img {
+	transition: transform 250ms var(--state);
+}
+
+.topic-row:hover .topic-row__image img,
+.topic-row:focus-within .topic-row__image img {
+	transform: scale(1.04);
+}
+
+.topic-row__text {
+	min-width: 0;
+}
+
+.topic-row__name {
+	font-family: var(--display);
+	font-size: var(--step-2);
+	font-weight: 800;
+	line-height: 1.12;
+	letter-spacing: -0.01em;
+}
+
+/* The name's link covers the whole row. */
+.topic-row__link {
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.topic-row__link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.topic-row:hover .topic-row__link,
+.topic-row__link:focus-visible {
+	text-decoration: underline 3px var(--mark);
+	text-underline-offset: 6px;
+}
+
+.topic-row__link:focus-visible {
+	outline: none;
+}
+
+.topic-row__link:focus-visible::after {
+	outline: 3px solid var(--focus);
+	outline-offset: 3px;
+}
+
+.topic-row__meta {
+	margin-top: 6px;
+	color: var(--muted);
+	line-height: 1.3;
+	font-variant-numeric: tabular-nums;
+}
+
+/* "10 videos · 6:20" on one line where it fits; on narrower rows the time
+   goes under the count, never half a line. */
+.topic-row__count,
+.topic-row__time {
+	white-space: nowrap;
+}
+
+.topic-row__time::before {
+	content: " · ";
+}
+
+.topic-grid {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	grid-auto-flow: dense;
+	gap: 48px 24px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.topic {
+	position: relative;
+	min-width: 0;
+}
+
+.topic--wide {
+	grid-column: span 2;
+}
+
+.topic__images {
+	display: grid;
+	grid-auto-columns: minmax(0, 1fr);
+	grid-auto-flow: column;
+	gap: 24px;
+}
+
+.topic__image {
+	display: block;
+	aspect-ratio: 480 / 750;
+	overflow: hidden;
+	border-radius: 0;
+	background: var(--tint);
+}
+
+.topic__image img {
+	transition: transform 250ms var(--state);
+}
+
+.topic:hover .topic__image img,
+.topic:focus-within .topic__image img {
+	transform: scale(1.04);
+}
+
+.topic__name {
+	margin-top: 16px;
+	font-family: var(--display);
+	font-size: var(--step-2);
+	font-weight: 800;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+
+/* The name's link covers the whole card. */
+.topic__link {
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.topic__link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.topic:hover .topic__link,
+.topic__link:focus-visible {
+	text-decoration: underline 3px var(--mark);
+	text-underline-offset: 6px;
+}
+
+.topic__link:focus-visible {
+	outline: none;
+}
+
+.topic__link:focus-visible::after {
+	outline: 3px solid var(--focus);
+	outline-offset: 3px;
+}
+
+.topic__meta {
+	margin-top: 6px;
+	color: var(--muted);
+	line-height: 1.3;
+	font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1099px) {
+	.topic-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.topic-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 699px) {
+	.topics {
+		padding: 80px 0 88px;
+	}
+
+	.topics--page {
+		padding: 48px 0 88px;
+	}
+
+	.topic-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 36px 12px;
+	}
+
+	.topic__images {
+		gap: 12px;
+	}
+
+	.topic-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 16px 12px;
+	}
+
+	.topic-row {
+		gap: 12px;
+		padding-bottom: 16px;
+	}
+
+	.topic-row__image {
+		flex-basis: 56px;
+	}
+
+	.topic-row__name {
+		font-size: 19px;
+	}
+
+	.topic-row__time {
+		display: block;
+	}
+
+	.topic-row__time::before {
+		content: none;
+	}
+}

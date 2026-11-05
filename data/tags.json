@@ -1,4 +1,24 @@
 {
     "ai": "AI",
-    "career-quest": "Career Quest"
+    "career-quest": "Career Quest",
+    "career-exploration": "Career exploration",
+    "company-trips": "Company trips",
+    "cybersecurity": "Cybersecurity",
+    "faculty": "Faculty",
+    "faith": "Faith",
+    "games": "Games",
+    "informational-interviews": "Informational interviews",
+    "internships": "Internships",
+    "interviews": "Interviews",
+    "job-search": "Job search",
+    "mentors": "Mentors",
+    "motivation": "Motivation",
+    "networking": "Networking",
+    "portfolio": "Portfolio",
+    "resume": "Resume",
+    "robotics": "Robotics",
+    "soft-skills": "Soft skills",
+    "student-projects": "Student projects",
+    "student-stories": "Student stories",
+    "study-habits": "Study habits"
 }

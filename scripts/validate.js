@@ -2,8 +2,8 @@
  * Checks data/videos.json and data/tags.json and lists every problem it finds.
  * Run with `npm run validate`.
  */
-import { loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
-import { DATA_FILE, plural, TAGS_FILE } from "./build.js";
+import { checkCovers, loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
+import { DATA_FILE, plural, SRC, TAGS_FILE } from "./build.js";
 
 /**
  * @param {string} name
@@ -21,15 +21,18 @@ const report = (name, errors) => {
 
 try {
     const videos = await loadVideos(DATA_FILE);
-    const videoErrors = validateVideos(videos);
+    const names = await loadTagNames(TAGS_FILE);
+    const videoErrors = validateVideos(videos, names);
 
     if (videoErrors.length > 0) {
         report("data/videos.json", videoErrors);
     } else {
+        const { errors, warnings } = await checkCovers(videos, SRC);
+        if (errors.length) report("src/covers", errors);
+        for (const warning of warnings) console.warn(`  ${warning}`);
         console.log(`data/videos.json is valid (${plural(videos.length, "video")}).`);
     }
 
-    const names = await loadTagNames(TAGS_FILE);
     const nameErrors = validateTagNames(names);
 
     if (nameErrors.length > 0) {

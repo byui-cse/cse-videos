@@ -1,84 +1,230 @@
 /**
- * Site header: the site name, the department it belongs to, and the two
- * places to go. Both links fit at every width, so there is no menu button.
+ * The header: a BYU-I blue utility bar naming the department, over a white
+ * masthead with the wordmark set in type, three links, and the search button.
  */
-.site-header {
-	border-block-end: 1px solid var(--color-line);
-	background: var(--color-paper);
+.utility {
+	min-height: 36px;
+	background: var(--blue);
+	color: #fff;
+	font-size: 16px;
+	line-height: 1;
 }
 
-.site-header__inner {
+.utility__inner {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: var(--space-sm) var(--space-lg);
-	min-height: var(--header-h);
-	padding-block: var(--space-xs);
+	column-gap: 24px;
+	min-height: 36px;
 }
 
-/* The name shrinks and wraps before the nav does; the nav drops to its own
-   line only when text is enlarged. */
-.brand {
+.utility__name {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.utility__short {
+	display: none;
+}
+
+.utility__links {
 	display: flex;
-	flex: 1 1 10rem;
-	flex-direction: column;
-	color: var(--color-ink);
-	font-family: var(--font-ui);
-	line-height: 1.15;
+	flex: 0 0 auto;
+	gap: 24px;
+	margin: 0 0 0 auto;
+	padding: 0;
+	list-style: none;
+}
+
+.utility a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	color: #fff;
 	text-decoration: none;
-
-	&:hover {
-		color: var(--color-ink);
-	}
+	white-space: nowrap;
 }
 
-.brand__name {
-	font-size: 1.25rem;
-	font-weight: var(--weight-black);
+.utility a:hover {
+	text-decoration: underline;
+}
+
+.utility :focus-visible {
+	outline-color: #fff;
+}
+
+.masthead {
+	height: 88px;
+	border-bottom: 1px solid var(--line);
+	background: var(--surface);
+}
+
+.masthead__inner {
+	display: flex;
+	align-items: center;
+	gap: 32px;
+	height: 100%;
+}
+
+.wordmark {
+	display: flex;
+	align-items: baseline;
+	gap: 14px;
+	color: var(--wordmark);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.wordmark__name {
+	font-family: var(--display);
+	font-size: 30px;
+	font-weight: 800;
+	line-height: 1;
 	letter-spacing: -0.01em;
-	color: var(--color-link);
 }
 
-.brand__dept {
-	font-size: var(--text-min);
-	font-weight: var(--weight-semibold);
-	color: var(--color-ink);
+.wordmark__department {
+	color: var(--muted);
+	font-size: 17px;
+	font-weight: 600;
 }
 
-@media (max-width: 26rem) {
-	.brand__dept {
-		font-size: 0.9375rem;
-	}
+.site-nav {
+	margin-left: auto;
 }
 
 .site-nav__list {
 	display: flex;
-	gap: clamp(1rem, 0.5rem + 1.5vw, 2rem);
+	gap: 32px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
-
-	li + li {
-		margin: 0;
-	}
 }
 
 .site-nav__link {
 	display: inline-flex;
 	align-items: center;
-	min-height: var(--touch-min);
-	color: var(--color-ink);
-	font-family: var(--font-ui);
-	font-size: var(--text-sm);
-	font-weight: var(--weight-semibold);
+	min-height: 44px;
+	color: var(--ink);
+	font-size: 18px;
+	font-weight: 500;
 	text-decoration: none;
-	text-decoration-thickness: 2px;
-	text-underline-offset: 0.4em;
+	white-space: nowrap;
+}
 
-	&:hover,
-	&[aria-current="page"],
-	&.site-nav__link--section {
-		color: var(--color-link);
-		text-decoration-line: underline;
+.site-nav__narrow {
+	display: none;
+}
+
+.site-nav__link:hover {
+	text-decoration: underline 1px;
+	text-underline-offset: 10px;
+}
+
+/* The current page, and pages inside its section, carry byui.edu's 3 px mark. */
+.site-nav__link[aria-current="page"],
+.site-nav__link--section {
+	text-decoration: underline 3px var(--mark);
+	text-underline-offset: 10px;
+}
+
+.search-button {
+	display: grid;
+	flex: 0 0 auto;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	border: 2px solid var(--blue);
+	border-radius: 4px;
+	color: var(--blue);
+}
+
+.search-button:hover {
+	background: var(--blue);
+	color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+	.search-button {
+		border-color: var(--mark);
+		color: var(--mark);
+	}
+}
+
+@media (max-width: 1099px) {
+	.wordmark__department {
+		display: none;
+	}
+}
+
+@media (max-width: 699px) {
+	.utility__long,
+	.utility__department {
+		display: none;
+	}
+
+	.utility__short {
+		display: inline;
+	}
+
+	.utility__links {
+		gap: 16px;
+	}
+
+	.masthead {
+		height: 64px;
+	}
+
+	.masthead__inner {
+		gap: 10px;
+	}
+
+	.wordmark__name {
+		font-size: 20px;
+	}
+
+	.site-nav__list {
+		gap: 10px;
+	}
+
+	.site-nav__link {
+		font-size: 16px;
+	}
+
+	.site-nav__link[aria-current="page"],
+	.site-nav__link--section,
+	.site-nav__link:hover {
+		text-underline-offset: 8px;
+	}
+
+	.search-button {
+		display: none;
+	}
+}
+
+@media (max-width: 419px) {
+	.site-nav__wide {
+		display: none;
+	}
+
+	.site-nav__narrow {
+		display: inline;
+	}
+}
+
+/* The narrowest phones put the wordmark over the links. */
+@media (max-width: 359px) {
+	.masthead {
+		height: auto;
+	}
+
+	.masthead__inner {
+		flex-wrap: wrap;
+		row-gap: 0;
+		padding-block: 10px 2px;
+	}
+
+	.site-nav {
+		margin-left: 0;
 	}
 }

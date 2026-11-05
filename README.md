@@ -1,11 +1,11 @@
 # cse-videos
 Video Library Website for the CSE Department
 
-Students and faculty can find, watch, and share the department's videos. Search by text or tag, browse the tag directory, open any video on its own page, and copy a link to a search, a tag, or a single video.
+Students and faculty can find, watch, and share the department's videos. Search by text or topic, browse the topics, open any video on its own page, and copy a link to a search, a topic, or a single video.
 
 ## Run it locally
 
-Needs Node 20 or newer.
+Needs Node 20.9 or newer.
 
 ```sh
 npm install
@@ -17,9 +17,10 @@ The site runs at http://localhost:5190 and rebuilds whenever you save a file. Re
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Builds the site, serves it, and rebuilds on save |
-| `npm run build` | Builds the site into `dist/` |
+| `npm run build` | Builds the site into `dist/`, including smaller copies of the covers |
 | `npm run validate` | Checks `data/videos.json` and `data/tags.json` and lists any problems |
 | `npm test` | Runs the tests |
+| `npm run test:e2e` | Runs the browser tests in headless Chromium (run `npx playwright install chromium` once first) |
 
 ## Pages and links
 
@@ -27,73 +28,77 @@ Everything is in the address, so any view can be shared by copying the link.
 
 | Address | Shows |
 | --- | --- |
-| `/` | Every video, newest first, with search |
-| `/?q=portfolio` | A search. Every word typed has to match the start of a word in the title, description, tags, or credits. |
-| `/?sort=oldest` | Oldest first. Works on the home page and on tag pages. |
-| `/tags/` | Every tag and how many videos have it |
-| `/tags/portfolio/` | The videos with one tag |
+| `/` | A wall of every video's still with the search, then every video newest first, the topics, and Career Quest. On a phone the list opens on its first 12 videos with a button for the rest; a search always looks through all of them. |
+| `/?q=portfolio` | A search. Every word typed has to match the start of a word in the title, description, tags, or credits. Common plurals and -ing or -ed forms count, so "jobs" finds "job", "getting" finds "get", and "coding" finds "code". |
+| `/?sort=oldest` | Oldest first. Works on the home page and on topic pages; a series is always in part order. |
+| `/tags/` | Every topic, the most used first, with how many videos it has and how long they run |
+| `/tags/portfolio/` | The videos on one topic. A series, like Career Quest, is in part order. |
 | `/videos/career-quest-part-1/` | One video and its player |
 | `/videos/career-quest-part-1/?source=instagram` | The same video, playing from Instagram instead of YouTube |
 
+Pressing YouTube or Instagram above a video, or in the "Play videos on" switch in the blue bar at the top (shown once any video has both links), also sets a soft preference: later videos open on that player when they have it, and a video on only the other one plays there with a short "Only on Instagram" or "Only on YouTube" note. The preference is kept in this browser only and is never added to the address, so a shared link with `?source=` still opens on the player it names.
+
 ## Adding a video
 
-1. Add an entry to [`data/videos.json`](data/videos.json).
-2. Add its cover to `src/covers/`, named after its id: `src/covers/career-quest-part-1.jpg`. A video with a YouTube link can skip this; the site uses YouTube's thumbnail.
-3. Run `npm run validate`, then open a pull request.
+1. On github.com, open [`data/videos.json`](data/videos.json) and click the pencil. Paste the template below right after the opening `[`, including its trailing comma, then replace the example values. The site sorts by date, so position in the file does not matter.
+2. Commit the edit to a new branch. On that same branch, open `src/covers/` and use **Add file > Upload files** to add a 480×750 JPEG under 150 KB named `<id>.jpg`. That one file is all a video needs; the build makes the smaller copies the pages use. On a Mac, make one from a still of the reel (JPEG, PNG or HEIC, taller than 480:750 as reel frames are) with `sips -s format jpeg --resampleWidth 480 -c 750 480 still.png --out <id>.jpg`, replacing `still.png` with your file and `<id>` with the video's id. It scales the still to 480 wide and trims the top and bottom to 750.
+3. Open a pull request from your branch. The checks run on their own. If you see a red X, click **Details** to read what needs fixing, then edit the files on the same branch.
 
 ```json
 {
     "id": "career-quest-part-1",
     "title": "Career Quest, Part 1: Every job hunt needs three things",
     "description": "The caption from the Instagram post.",
-    "youtube": "https://www.youtube.com/shorts/VIDEO_ID",
     "instagram": "https://www.instagram.com/reel/POST_CODE/",
     "length": "1:05",
     "datePosted": "2026-10-19",
+    "series": "career-quest",
+    "part": 1,
     "tags": ["career-quest", "job-search"]
-}
+},
 ```
+
+Use a unique id and reel link. For a standalone video, delete the `series` and `part` lines.
 
 | Field | Required | Format |
 | --- | --- | --- |
-| `id` | Yes | Lowercase words joined by hyphens. Used in the video's link, so don't change it once it's live. |
-| `title` | Yes | Text |
-| `description` | No | Text. Blank lines start a new paragraph. |
-| `youtube` | One of the two links | A YouTube video link (watch, youtu.be, or shorts). Shorts play in a tall player. |
-| `instagram` | One of the two links | An Instagram post or reel link |
-| `length` | No | `m:ss` or `h:mm:ss` |
-| `attributions` | No | A list of text, for music or content credits |
-| `datePosted` | Yes | `YYYY-MM-DD`. Lists are sorted by this date. |
-| `dateCreated` | No | `YYYY-MM-DD` |
-| `tags` | Yes | A list of lowercase words joined by hyphens |
-| `stats` | No | Counts, like `{ "newPeople": 3, "projects": 1 }` |
+| `id` | Yes | Unique lowercase words joined by hyphens; used in the video's link, so don't change it once live. |
+| `title` | Yes | The video's title. |
+| `description` | No | The Instagram caption without hashtags; write `\n` for a line break, `\n\n` for a new paragraph, and `\"` for a double quote. |
+| `instagram` | Yes, unless using YouTube | An https Instagram post or reel link. |
+| `length` | No | `m:ss` or `h:mm:ss`. |
+| `attributions` | No | A list of credits; links may use `[text](https://url)`. |
+| `datePosted` | Yes | `YYYY-MM-DD`; lists sort by this date. |
+| `dateCreated` | No | `YYYY-MM-DD`. |
+| `tags` | Yes | A list of tag ids from [`data/tags.json`](data/tags.json). |
+| `series` | With `part` | A lowercase slug for videos in a series, like `career-quest`. It must also be one of the video's tags. |
+| `part` | With `series` | A whole number starting at 1. Each part appears once, with no gaps. |
+| `stats` | No | Counts, like `{ "newPeople": 3, "projects": 1 }`. |
 
-When a video has both links, its page plays YouTube and offers a switch to Instagram, where viewers can see likes and comments.
+Optional: add a `youtube` field with an https YouTube video link (watch, youtu.be, or shorts). With both links, the page plays YouTube and offers an Instagram switch. A YouTube video may omit the cover; the site uses its thumbnail.
+
+The current covers are stills taken from each reel, saved at 480×750.
 
 ### Tag names
 
-A tag's name is its id spelled out: `job-search` shows as "Job search". When that isn't right, give it a name in [`data/tags.json`](data/tags.json):
-
-```json
-{
-    "ai": "AI",
-    "career-quest": "Career Quest"
-}
-```
-
-Run `npm run validate` before you push. The build runs the same checks, so a mistake fails the deploy instead of breaking the live site.
+Tags are shown on the site as topics. Every tag must be listed in [`data/tags.json`](data/tags.json). Reuse an existing id whenever possible. To introduce a new tag, add its id and display name there in the same pull request.
 
 ## Deploying
 
-Every push to `main` runs the checks and deploys the site to GitHub Pages. Pull requests run the same checks without deploying.
+Every push to `main` runs the data checks and unit tests, then deploys the site to GitHub Pages. Pull requests run those checks plus the browser tests (`npm run test:e2e`), without deploying.
 
 One-time setup for a repo admin: Settings > Pages > Build and deployment > Source: **GitHub Actions**.
 
 ## How it's put together
 
 - `data/` holds the videos and tag names.
-- `lib/render.js` writes every page as plain HTML at build time, so pages load fast, work without JavaScript, and show a title and cover when a link is shared. `lib/site.js` sorts, counts tags, and formats dates; `lib/videos.js` checks the data.
-- `src/js/` adds search, sorting, copy link, and the player controls in the browser. `src/js/search.js` is shared with the build, so search matches the same words everywhere.
-- `src/css/` follows the [CS & SE site](https://github.com/byui-cse/byui-cse.github.io): the same color, type, and spacing tokens, base styles, and buttons. The build bundles it into one file with [Lightning CSS](https://lightningcss.dev/).
-- Tests are in `test/`.
-- Fonts are Source Sans 3 and Source Serif 4 (SIL Open Font License), from Fontsource.
+- `lib/pages/` writes every page as plain HTML at build time, so pages load fast, work without JavaScript, and show a title and cover when a link is shared: `home.js`, `video.js`, `tags.js` (the topics and each topic), `not-found.js`, and `layout.js` and `parts.js` for what they share. `lib/render.js` gathers them for the build. Every value from the data goes through `lib/html.js`, which escapes it. `lib/site.js` sorts, counts tags, adds up running times, and formats dates; `lib/related.js` finds a video's series parts and related videos; `lib/wall.js` arranges the home page's wall; `lib/videos.js` checks the data.
+- `lib/images.js` makes AVIF and WebP copies of each cover at 240, 360 and 480 pixels wide with [sharp](https://sharp.pixelplumbing.com/), and every still offers them through `srcset` and `sizes` with the JPEG as the fallback. The copies are written into `dist/` and cached in `node_modules/.cache/`, named by the cover's contents and every setting that shapes them, so a rebuild only makes copies of new or changed covers, or all of them after a setting changes. They are never committed.
+- `src/js/` adds search, sorting, the link buttons, and the player controls in the browser, starting from `main.js`. `src/js/search.js` is shared with the build, so search matches the same words everywhere. `motion.js` is the only motion that runs on its own: the wall drifts a little slower than the page as you scroll, and Career Quest's boards fade up once. Everything else responds to a pointer, a key, or a click: a still on the wall lights up and shows its title, stills in the grid zoom slightly inside their frames, Career Quest's boards lift with a gold edge, and the still you click carries into the next page's player (`transition.js`, a cross-document view transition). With reduced motion turned on, nothing moves; the short fades on the wall stay.
+- The wall is for the pointer. Every video on it is also in the list below, so its links are left out of the tab order and hidden from screen readers.
+- `js/main.js` holds the first paint until it has run (`blocking="render"`), with every module it imports preloaded beside it. Without that, Chromium paints a page while its modules are still loading and drops the page-to-page view transition with an error.
+- `src/css/` is the design in cascade layers (tokens, base, layout, components, utilities): BYU-Idaho blue utility bar over a white header, navy bands, a blue footer, square stills, and 4 px corners on controls, in the CS & SE colors. The build bundles it into one file with [Lightning CSS](https://lightningcss.dev/). Light and dark follow the device.
+- Pages carry a strict Content Security Policy: no inline styles, and no inline scripts except the one on Instagram video pages, which the policy allows by its hash.
+- Unit tests are in `test/` (`npm test`). Browser tests are in `e2e/` (`npm run test:e2e`).
+- `src/favicon.svg` is a placeholder icon, the letters CSE in white on navy, until the department supplies a mark.
+- Fonts are Sofia Sans and Sofia Sans Semi Condensed (SIL Open Font License, licenses in `src/fonts/`), self-hosted variable WOFF2 files from Fontsource, latin only.

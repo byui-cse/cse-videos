@@ -5,8 +5,7 @@
 	display: none !important;
 }
 
-/* Read by screen readers, not shown. The --on-phone version does the same
-   below 40rem only, for text a phone has no room for. */
+/* Read by screen readers, not shown. */
 .visually-hidden {
 	position: absolute;
 	width: 1px;
@@ -14,30 +13,7 @@
 	padding: 0;
 	margin: -1px;
 	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
+	clip: rect(0 0 0 0);
 	white-space: nowrap;
 	border: 0;
-}
-
-@media (max-width: 39.99rem) {
-	.visually-hidden--on-phone {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-}
-
-.text-muted {
-	color: var(--color-muted);
-}
-
-.plain-list {
-	padding: 0;
-	list-style: none;
 }

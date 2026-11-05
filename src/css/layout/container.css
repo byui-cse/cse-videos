@@ -1,0 +1,24 @@
+/**
+ * The container and the skip link.
+ */
+.container {
+	width: min(100% - 2 * var(--gutter), var(--container));
+	margin-inline: auto;
+}
+
+.skip-link {
+	position: absolute;
+	top: -200px;
+	left: 16px;
+	z-index: 1000;
+	padding: 12px 18px;
+	border: 2px solid var(--blue);
+	border-radius: 4px;
+	background: var(--surface);
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.skip-link:focus {
+	top: 12px;
+}

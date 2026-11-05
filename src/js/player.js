@@ -1,8 +1,10 @@
 /**
- * The video player: switching between YouTube and Instagram, and Expand,
- * which grows the player to fill the window without reloading the video.
+ * The video player: opening on the viewer's preferred player, switching
+ * between YouTube and Instagram, and Expand, which grows the player to fill
+ * the window without reloading the video.
  */
-import { measuredHeight, playerUrl, requestedSource } from "./state.js";
+import { readPreference, savePreference } from "./preference.js";
+import { chooseSource, measuredHeight, onlySource, playerState, playerUrl, requestedSource } from "./state.js";
 
 const NAMES = { youtube: "YouTube", instagram: "Instagram" };
 const INSTAGRAM_ORIGIN = "https://www.instagram.com";
@@ -35,12 +37,17 @@ const isolate = (element) => {
     };
 };
 
+/**
+ * Starts the player on a video page. Returns a hook for a preference chosen
+ * elsewhere on the page, or null on pages without a player.
+ * @returns {{ prefer: (source: string) => void } | null}
+ */
 export const initPlayer = () => {
     const player = /** @type {HTMLElement | null} */ (document.querySelector("[data-player]"));
     let iframe = /** @type {HTMLIFrameElement | null} */ (player?.querySelector("iframe"));
 
     if (!player || !iframe) {
-        return;
+        return null;
     }
 
     const title = player.dataset.title ?? "Video";
@@ -49,8 +56,45 @@ export const initPlayer = () => {
         youtube: player.dataset.youtubeSrc,
         instagram: player.dataset.instagramSrc
     };
+    const available = Object.keys(sources).filter((key) => sources[key]);
     const sourceButtons = [...player.querySelectorAll("[data-source-button]")];
     const expandButton = /** @type {HTMLButtonElement | null} */ (player.querySelector("[data-expand]"));
+    const onlyLine = /** @type {HTMLElement | null} */ (player.querySelector("[data-only-on]"));
+    const frame = iframe.parentElement;
+    let status = /** @type {HTMLParagraphElement | null} */ (null);
+    let note = /** @type {HTMLParagraphElement | null} */ (null);
+    let activeSource = "";
+    let shownAt = 0;
+    let sawInstagramMessage = false;
+    let slowTimer;
+
+    /** @param {string} source */
+    const updateState = (source) => {
+        const state = playerState({ source, elapsedMs: performance.now() - shownAt, sawInstagramMessage });
+        player.dataset.state = state;
+
+        if (state === "slow" && !status && frame) {
+            status = document.createElement("p");
+            status.className = "player__status";
+            status.setAttribute("data-player-status", "");
+            status.setAttribute("role", "status");
+            status.append("The Instagram player hasn't loaded. Instagram may be blocked on this network or by a browser extension. ");
+
+            const link = document.createElement("a");
+            const postUrl = new URL(sources.instagram);
+            postUrl.pathname = postUrl.pathname.replace(/embed\/?$/, "");
+            link.href = postUrl.href;
+            link.textContent = "Watch on Instagram";
+            status.append(link);
+            // Before the frame, which the controls sit above, so the message
+            // is between them and on the first screen.
+            frame.before(status);
+        }
+
+        if (status) {
+            status.hidden = state !== "slow";
+        }
+    };
 
     /**
      * @param {string} source
@@ -76,6 +120,18 @@ export const initPlayer = () => {
             iframe = fresh;
         }
 
+        if (activeSource !== source) {
+            clearTimeout(slowTimer);
+            activeSource = source;
+            sawInstagramMessage = false;
+            shownAt = performance.now();
+            updateState(source);
+
+            if (source === "instagram") {
+                slowTimer = setTimeout(() => updateState(source), 10000);
+            }
+        }
+
         for (const button of sourceButtons) {
             button.setAttribute("aria-pressed", String(button.getAttribute("data-source-button") === source));
         }
@@ -85,34 +141,118 @@ export const initPlayer = () => {
         }
     };
 
-    const requested = requestedSource(window.location.search, Object.keys(sources).filter((key) => sources[key]));
+    /**
+     * "Only on Instagram" above the video when the viewer prefers the player
+     * this video doesn't have, said to screen readers too, so they know why
+     * it wasn't used.
+     * @param {string | null} preferred
+     */
+    const updateNote = (preferred) => {
+        const only = onlySource({ preferred, available });
 
-    if (requested) {
-        show(requested, false);
-    }
+        if (only && !note) {
+            note = document.createElement("p");
+            note.className = "player__note";
+            note.setAttribute("data-player-note", "");
+            note.setAttribute("role", "status");
+            (onlyLine ?? expandButton ?? frame)?.before(note);
+        }
+
+        if (note) {
+            note.textContent = only ? `Only on ${NAMES[only]}` : "";
+            note.hidden = !only;
+        }
+
+        // The page's own "Only on" line steps aside while the note says it.
+        if (onlyLine) {
+            onlyLine.hidden = Boolean(only);
+        }
+    };
+
+    // Opening on the preference leaves the address alone: the preference
+    // belongs to this browser, and a link with ?source= plays what it names.
+    const preferred = readPreference();
+    const chosen = chooseSource({
+        requested: requestedSource(window.location.search, available),
+        preferred,
+        available,
+        fallback: defaultSource
+    });
+
+    show(chosen ?? defaultSource, false);
+    updateNote(preferred);
 
     for (const button of sourceButtons) {
-        button.addEventListener("click", () => show(button.getAttribute("data-source-button") ?? "", true));
+        button.addEventListener("click", () => {
+            const source = button.getAttribute("data-source-button") ?? "";
+            show(source, true);
+            // A soft preference: later videos open on this player when they have it.
+            savePreference(source);
+        });
     }
 
-    // Instagram's player posts its height to the page; without it the frame
-    // would cut off or leave a gap.
-    window.addEventListener("message", (event) => {
-        if (event.origin !== INSTAGRAM_ORIGIN
-            || event.source !== iframe.contentWindow
-            || player.dataset.source !== "instagram") {
+    const hook = {
+        /**
+         * A preference chosen in the header: switches to it when this video
+         * has it, and otherwise says which player the video is on.
+         * @param {string} source
+         */
+        prefer: (source) => {
+            show(source, true);
+            updateNote(source);
+        }
+    };
+
+    /**
+     * A message from Instagram's player. It posts its height to the page;
+     * without it the frame would cut off or leave a gap.
+     * @param {unknown} data
+     * @param {MessageEventSource | null} source
+     */
+    const receive = (data, source) => {
+        if (source !== iframe.contentWindow || player.dataset.source !== "instagram") {
             return;
         }
 
-        const height = measuredHeight(event.data);
+        let message = data;
+
+        if (typeof message === "string") {
+            try {
+                message = JSON.parse(message);
+            } catch {
+                return;
+            }
+        }
+
+        if (!message || (message.type !== "LOADING" && message.type !== "MEASURE")) {
+            return;
+        }
+
+        sawInstagramMessage = true;
+        clearTimeout(slowTimer);
+        updateState("instagram");
+
+        const height = measuredHeight(message);
 
         if (height !== null) {
             iframe.style.height = `${height}px`;
         }
+    };
+
+    // The player can load and post before this module runs. A script in the
+    // page's head (lib/render.js) keeps those messages; replay them first.
+    for (const { data, source } of window.instagramMessages ?? []) {
+        receive(data, source);
+    }
+
+    window.addEventListener("message", (event) => {
+        if (event.origin === INSTAGRAM_ORIGIN) {
+            receive(event.data, event.source);
+        }
     });
 
     if (!expandButton) {
-        return;
+        return hook;
     }
 
     let restore = null;
@@ -143,6 +283,7 @@ export const initPlayer = () => {
 
     expandButton.addEventListener("click", () => setExpanded(!isExpanded()));
 
+    // Escape cannot reach a focused cross-origin frame; Close and the backdrop click remain exits.
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && isExpanded()) {
             setExpanded(false);
@@ -155,4 +296,6 @@ export const initPlayer = () => {
             setExpanded(false);
         }
     });
+
+    return hook;
 };

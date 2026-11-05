@@ -29,11 +29,48 @@ export const words = (text) => [...new Set(normalize(text)
     .filter(Boolean))];
 
 /**
- * True when every word typed is the start of some word in the video. An empty
- * search matches everything.
+ * Short forms of a typed word, with at least three letters each.
+ * @param {string} term
+ * @returns {string[]}
+ */
+const stems = (term) => {
+    if (/[+#]/.test(term)) {
+        return [];
+    }
+
+    let candidates = [];
+
+    if (term.endsWith("ies")) {
+        candidates = [`${term.slice(0, -3)}y`];
+    } else if (/(?:ss|x|z|ch|sh)es$/.test(term)) {
+        candidates = [term.slice(0, -2)];
+    } else if (term.endsWith("s") && !term.endsWith("ss")) {
+        candidates = [term.slice(0, -1)];
+    } else if (/(?:ing|ed)$/.test(term)) {
+        const base = term.replace(/(?:ing|ed)$/, "");
+        candidates = [base];
+
+        if (/([bdgmnprt])\1$/.test(base)) {
+            candidates.push(base.slice(0, -1));
+        }
+
+        if (/[bcdfghjklmnpqrstvwxyz]$/.test(base)) {
+            candidates.push(`${base}e`);
+        }
+    }
+
+    return candidates.filter((candidate) => candidate.length >= 3);
+};
+
+/**
+ * True when every word typed, or one of its light stems, starts some word in the video.
+ * An empty search matches everything.
  * @param {string[]} videoWords
  * @param {string} query
  * @returns {boolean}
  */
 export const matches = (videoWords, query) =>
-    words(query).every((term) => videoWords.some((word) => word.startsWith(term)));
+    words(query).every((term) => {
+        const candidates = [term, ...stems(term)];
+        return videoWords.some((word) => candidates.some((candidate) => word.startsWith(candidate)));
+    });

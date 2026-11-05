@@ -1,7 +1,8 @@
 /**
  * Builds the site into dist/: copies src/, bundles the CSS into one file,
- * and writes a page for the home list, the tag list, every tag, and every
- * video. Run with `npm run build`.
+ * writes smaller AVIF and WebP copies of the covers, and writes a page for
+ * the home list, the topic list, every topic, and every video. Run with
+ * `npm run build`.
  *
  * Set SITE_URL (the deploy workflow does) to add full links for sharing
  * previews, like https://byui-cse.github.io/cse-videos/.
@@ -10,9 +11,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
+import { writeCoverDerivatives } from "../lib/images.js";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
+import { robotsTxt, sitemapXml } from "../lib/seo.js";
 import { collectTags, plural } from "../lib/site.js";
-import { loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
+import { checkCovers, loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
 
 export { plural };
 
@@ -64,24 +67,6 @@ const failOn = (file, errors) => {
 };
 
 /**
- * The ids that have a cover image in src/covers/.
- * @param {string} srcDir
- * @returns {Promise<Set<string>>}
- */
-const findCovers = async (srcDir) => {
-    try {
-        const files = await fs.readdir(path.join(srcDir, "covers"));
-        return new Set(files.filter((file) => file.endsWith(".jpg")).map((file) => file.slice(0, -4)));
-    } catch (error) {
-        if (error.code === "ENOENT") {
-            return new Set();
-        }
-
-        throw error;
-    }
-};
-
-/**
  * @param {string} file
  * @param {string} contents
  */
@@ -102,23 +87,22 @@ export const build = async ({
     siteUrl = process.env.SITE_URL
 } = {}) => {
     const videos = await loadVideos(dataFile);
-    failOn("data/videos.json", validateVideos(videos));
 
     const names = await loadTagNames(tagsFile);
     failOn("data/tags.json", validateTagNames(names));
 
-    const covers = await findCovers(srcDir);
+    failOn("data/videos.json", validateVideos(videos, names));
+    const { covers, errors, warnings } = await checkCovers(videos, srcDir);
+    failOn("src/covers", errors);
     const site = {
         videos,
         tags: collectTags(videos, names),
         names,
         covers,
-        siteUrl: siteUrlFrom(siteUrl)
+        siteUrl: siteUrlFrom(siteUrl),
+        // The modules js/main.js imports, preloaded on every page.
+        scripts: (await fs.readdir(path.join(srcDir, "js"))).filter((name) => name.endsWith(".js") && name !== "main.js").sort()
     };
-
-    const warnings = videos
-        .filter((video) => !covers.has(video.id) && !video.youtube)
-        .map((video) => `${video.id} has no picture: add src/covers/${video.id}.jpg or a YouTube link`);
 
     // Build into a staging folder and swap it in at the end, so the dev server
     // never serves a half-written site.
@@ -134,6 +118,8 @@ export const build = async ({
 
     const { code } = bundle({ filename: path.join(cssDir, "main.css"), minify: true, targets: TARGETS });
     await writeFile(path.join(staging, "css", "main.css"), code);
+
+    await writeCoverDerivatives({ covers, srcDir, outDir: staging });
 
     await writeFile(path.join(staging, "data", "videos.json"), JSON.stringify(videos));
     await writeFile(path.join(staging, "data", "tags.json"), JSON.stringify(names));
@@ -154,6 +140,21 @@ export const build = async ({
 
     for (const [file, contents] of pages) {
         await writeFile(path.join(staging, file), contents);
+    }
+
+    await writeFile(path.join(staging, "robots.txt"), robotsTxt(site.siteUrl));
+
+    if (site.siteUrl) {
+        // No lastmod: a posting date isn't when a page last changed (an edited
+        // title or tag changes pages without moving it), and a wrong lastmod is
+        // worse than none.
+        const entries = [
+            { url: site.siteUrl },
+            { url: `${site.siteUrl}tags/` },
+            ...site.tags.map((tag) => ({ url: `${site.siteUrl}tags/${tag.slug}/` })),
+            ...videos.map((video) => ({ url: `${site.siteUrl}videos/${video.id}/` }))
+        ];
+        await writeFile(path.join(staging, "sitemap.xml"), sitemapXml(entries));
     }
 
     await fs.rm(outDir, { recursive: true, force: true });

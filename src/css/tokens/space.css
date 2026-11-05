@@ -1,0 +1,16 @@
+/**
+ * Space and timing: a 1344 px container with fluid gutters, the header's
+ * height for the wall below it, and one easing for every state change.
+ */
+:root {
+	--gutter: clamp(20px, 12px + 2.5vw, 48px);
+	--container: 1344px;
+	--chrome: 124px;
+	--state: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (max-width: 699px) {
+	:root {
+		--chrome: 100px;
+	}
+}
