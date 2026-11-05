@@ -29,22 +29,41 @@ export const words = (text) => [...new Set(normalize(text)
     .filter(Boolean))];
 
 /**
- * A short form of a typed word, when removing its ending leaves enough letters.
+ * Short forms of a typed word, with at least three letters each.
  * @param {string} term
- * @returns {string}
+ * @returns {string[]}
  */
-const stem = (term) => {
+const stems = (term) => {
     if (/[+#]/.test(term)) {
-        return "";
+        return [];
     }
 
-    const ending = term.match(/(?:ing|ed|es|s)$/)?.[0];
-    const shorter = term.endsWith("ies") ? `${term.slice(0, -3)}y` : ending ? term.slice(0, -ending.length) : "";
-    return shorter.length >= 3 ? shorter : "";
+    let candidates = [];
+
+    if (term.endsWith("ies")) {
+        candidates = [`${term.slice(0, -3)}y`];
+    } else if (/(?:ss|x|z|ch|sh)es$/.test(term)) {
+        candidates = [term.slice(0, -2)];
+    } else if (term.endsWith("s") && !term.endsWith("ss")) {
+        candidates = [term.slice(0, -1)];
+    } else if (/(?:ing|ed)$/.test(term)) {
+        const base = term.replace(/(?:ing|ed)$/, "");
+        candidates = [base];
+
+        if (/([bdgmnprt])\1$/.test(base)) {
+            candidates.push(base.slice(0, -1));
+        }
+
+        if (/[bcdfghjklmnpqrstvwxyz]$/.test(base)) {
+            candidates.push(`${base}e`);
+        }
+    }
+
+    return candidates.filter((candidate) => candidate.length >= 3);
 };
 
 /**
- * True when every word typed, or its light stem, starts some word in the video.
+ * True when every word typed, or one of its light stems, starts some word in the video.
  * An empty search matches everything.
  * @param {string[]} videoWords
  * @param {string} query
@@ -52,6 +71,6 @@ const stem = (term) => {
  */
 export const matches = (videoWords, query) =>
     words(query).every((term) => {
-        const shorter = stem(term);
-        return videoWords.some((word) => word.startsWith(term) || (shorter && word.startsWith(shorter)));
+        const candidates = [term, ...stems(term)];
+        return videoWords.some((word) => candidates.some((candidate) => word.startsWith(candidate)));
     });

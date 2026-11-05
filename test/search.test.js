@@ -80,11 +80,33 @@ describe("search", () => {
             ["careers", "career"],
             ["interviewing", "interview"],
             ["studies", "study"],
+            ["stories", "story"],
+            ["classes", "class"],
+            ["boxes", "box"],
+            ["coaches", "coach"],
+            ["wishes", "wish"],
+            ["notes", "note"],
+            ["stores", "store"],
+            ["uses", "use"],
+            ["ages", "age"],
             ["portfolios", "portfolio"],
-            ["completed", "complete"]
+            ["completed", "complete"],
+            ["getting", "get"],
+            ["fitting", "fit"],
+            ["planned", "plan"],
+            ["coding", "cod"],
+            ["coding", "code"],
+            ["coded", "code"]
         ]) {
             assert.equal(matches(words(singular), query), true, query);
         }
+    });
+
+    it("keeps plural stems from matching unrelated words", () => {
+        assert.equal(matches(words("nothing"), "notes"), false);
+        assert.equal(matches(words("storm"), "stores"), false);
+        assert.equal(matches(words("classes"), "class"), true);
+        assert.equal(matches(words("use"), "uses"), true);
     });
 
     it("does not shorten terms below three characters", () => {
