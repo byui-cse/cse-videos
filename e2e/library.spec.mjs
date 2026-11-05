@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import { smartQuotes } from "../lib/html.js";
 import { startSite, tagNames, videos } from "./helpers.mjs";
 
 let site;
@@ -7,6 +8,7 @@ before(async () => { site = await startSite(); });
 after(async () => { await site?.close(); });
 
 const video = videos.find((item) => item.instagram);
+const shownTitle = smartQuotes(video.title);
 const videoPath = `/videos/${video.id}/`;
 const cards = (page) => page.locator("[data-video-list]").getByRole("listitem");
 const ids = async (page) => cards(page).getByRole("link").evaluateAll((links) =>
@@ -93,12 +95,12 @@ test("Instagram embed expands as a modal and Escape restores focus", async (t) =
     const { page } = await site.page(t);
     await page.goto(`${videoPath}?source=instagram`);
     const code = new URL(video.instagram).pathname.split("/").filter(Boolean)[1];
-    const frame = page.getByTitle(`${video.title} (Instagram)`, { exact: true });
+    const frame = page.getByTitle(`${shownTitle} (Instagram)`, { exact: true });
     const embed = new URL(await frame.getAttribute("src"));
     assert.equal(embed.hostname, "www.instagram.com");
     assert.equal(embed.pathname, `/p/${code}/embed/`);
     await page.getByRole("button", { name: "Expand", exact: true }).click();
-    assert.equal(await page.getByRole("dialog", { name: video.title }).getAttribute("aria-modal"), "true");
+    assert.equal(await page.getByRole("dialog", { name: shownTitle }).getAttribute("aria-modal"), "true");
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("dialog").count(), 0);
     assert.equal(await page.locator("[data-player]").getAttribute("aria-modal"), null);

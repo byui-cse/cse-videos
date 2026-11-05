@@ -13,7 +13,7 @@ import { bundle } from "lightningcss";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
 import { robotsTxt, sitemapXml } from "../lib/seo.js";
 import { collectTags, newestFirst, plural } from "../lib/site.js";
-import { loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
+import { checkCovers, loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
 
 export { plural };
 
@@ -65,24 +65,6 @@ const failOn = (file, errors) => {
 };
 
 /**
- * The ids that have a cover image in src/covers/.
- * @param {string} srcDir
- * @returns {Promise<Set<string>>}
- */
-const findCovers = async (srcDir) => {
-    try {
-        const files = await fs.readdir(path.join(srcDir, "covers"));
-        return new Set(files.filter((file) => file.endsWith(".jpg")).map((file) => file.slice(0, -4)));
-    } catch (error) {
-        if (error.code === "ENOENT") {
-            return new Set();
-        }
-
-        throw error;
-    }
-};
-
-/**
  * @param {string} file
  * @param {string} contents
  */
@@ -103,12 +85,13 @@ export const build = async ({
     siteUrl = process.env.SITE_URL
 } = {}) => {
     const videos = await loadVideos(dataFile);
-    failOn("data/videos.json", validateVideos(videos));
 
     const names = await loadTagNames(tagsFile);
     failOn("data/tags.json", validateTagNames(names));
 
-    const covers = await findCovers(srcDir);
+    failOn("data/videos.json", validateVideos(videos, names));
+    const { covers, errors, warnings } = await checkCovers(videos, srcDir);
+    failOn("src/covers", errors);
     const site = {
         videos,
         tags: collectTags(videos, names),
@@ -116,10 +99,6 @@ export const build = async ({
         covers,
         siteUrl: siteUrlFrom(siteUrl)
     };
-
-    const warnings = videos
-        .filter((video) => !covers.has(video.id) && !video.youtube)
-        .map((video) => `${video.id} has no picture: add src/covers/${video.id}.jpg or a YouTube link`);
 
     // Build into a staging folder and swap it in at the end, so the dev server
     // never serves a half-written site.

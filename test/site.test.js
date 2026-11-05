@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { readJpegSize } from "../lib/jpeg.js";
 import {
     collectTags,
     cover,
@@ -11,6 +12,7 @@ import {
     plural,
     popularTags,
     searchWords,
+    sameText,
     spokenLength,
     statName,
     summary,
@@ -150,7 +152,7 @@ describe("players and covers", () => {
 
     it("prefers a cover file, then the YouTube thumbnail", () => {
         const video = { id: "a", youtube: "https://youtu.be/dQw4w9WgXcQ" };
-        assert.deepEqual(cover(video, true, "../../"), { src: "../../covers/a.jpg", width: 540, height: 844 });
+        assert.deepEqual(cover(video, { width: 480, height: 750 }, "../../"), { src: "../../covers/a.jpg", width: 480, height: 750 });
         assert.deepEqual(cover(video, false, ""), { src: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", width: 480, height: 360 });
         assert.equal(cover({ id: "b" }, false, ""), null);
     });
@@ -158,5 +160,31 @@ describe("players and covers", () => {
     it("uses the tall thumbnail for Shorts", () => {
         const short = { id: "c", youtube: "https://www.youtube.com/shorts/dQw4w9WgXcQ" };
         assert.deepEqual(cover(short, false, ""), { src: "https://i.ytimg.com/vi/dQw4w9WgXcQ/oar2.jpg", width: 720, height: 1280 });
+    });
+});
+
+
+describe("caption and cover helpers", () => {
+    it("compares captions without case, punctuation or spacing", () => {
+        assert.equal(sameText("Career Quest - Part 4:", "career quest part 4"), true);
+        assert.equal(sameText("Showcase: Micro Mouse", "SHOWCASE micro-mouse!"), true);
+        assert.equal(sameText("Part 4", "Part 5"), false);
+    });
+
+    it("reads dimensions from an actual cover and rejects non-JPEG files", async () => {
+        assert.deepEqual(await readJpegSize(new URL("../src/covers/career-quest-part-1.jpg", import.meta.url)), {
+            width: 480, height: 750
+        });
+        await assert.rejects(readJpegSize(new URL("../data/tags.json", import.meta.url)), /not a readable JPEG/);
+    });
+
+    it("indexes credit labels without indexing their addresses", () => {
+        const text = searchWords({ title: "Photo", tags: [], attributions: [
+            "[Pavili255](https://commons.wikimedia.org/wiki/User:Pavili255), [CC BY-SA 4.0](https://creativecommons.org/)",
+            "Music https://example.com/license"
+        ] });
+        assert.match(text, /pavili255/);
+        assert.match(text, /cc by sa/);
+        assert.doesNotMatch(text, /https|wiki|example|creativecommons/);
     });
 });

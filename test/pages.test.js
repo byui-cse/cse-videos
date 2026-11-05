@@ -3,7 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
-import { build, siteUrlFrom } from "../scripts/build.js";
+import { videoPage } from "../lib/render.js";
+import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
     {
@@ -28,7 +29,7 @@ const VIDEOS = [
     {
         id: "lecture",
         title: "A lecture",
-        youtube: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        youtube: "https://www.youtube.com/watch?v=abcdefghijk",
         datePosted: "2026-11-01",
         tags: ["ai"]
     }
@@ -37,6 +38,7 @@ const VIDEOS = [
 let dir;
 let out;
 let result;
+let srcDir;
 
 const read = (file) => fs.readFile(path.join(out, file), "utf8");
 const structuredData = (page) => [...page.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)]
@@ -45,12 +47,16 @@ const structuredData = (page) => [...page.matchAll(/<script type="application\/l
 before(async () => {
     dir = await fs.mkdtemp(path.join(os.tmpdir(), "cse-videos-"));
     out = path.join(dir, "dist");
+    srcDir = path.join(dir, "src");
+    await fs.cp(SRC, srcDir, { recursive: true });
+    await fs.copyFile(path.join(SRC, "covers", "career-quest-part-1.jpg"), path.join(srcDir, "covers", "older-reel.jpg"));
     await fs.writeFile(path.join(dir, "videos.json"), JSON.stringify(VIDEOS));
-    await fs.writeFile(path.join(dir, "tags.json"), JSON.stringify({ ai: "AI", "career-quest": "Career Quest" }));
+    await fs.writeFile(path.join(dir, "tags.json"), JSON.stringify({ ai: "AI", "career-quest": "Career Quest", "job-search": "Job search" }));
 
     result = await build({
         dataFile: path.join(dir, "videos.json"),
         tagsFile: path.join(dir, "tags.json"),
+        srcDir,
         outDir: out,
         siteUrl: "https://byui-cse.github.io/cse-videos"
     });
@@ -88,8 +94,13 @@ describe("build", () => {
         );
     });
 
-    it("warns about a video with no picture", () => {
-        assert.ok(result.warnings.some((warning) => warning.startsWith("older-reel has no picture")));
+    it("refuses to build a reel without a cover", async () => {
+        await assert.rejects(build({
+            dataFile: path.join(dir, "videos.json"),
+            tagsFile: path.join(dir, "tags.json"),
+            srcDir: SRC,
+            outDir: path.join(dir, "missing-cover")
+        }), /older-reel has no cover/);
     });
 
     it("refuses bad data with every problem listed", async () => {
@@ -137,6 +148,7 @@ describe("build", () => {
         await build({
             dataFile: path.join(dir, "videos.json"),
             tagsFile: path.join(dir, "tags.json"),
+            srcDir,
             outDir: localOut,
             siteUrl: ""
         });
@@ -290,13 +302,13 @@ describe("video pages", () => {
 
     it("use the YouTube thumbnail for the sharing preview when there is no cover file", async () => {
         const page = await read("videos/lecture/index.html");
-        assert.match(page, /<meta property="og:image" content="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/hqdefault\.jpg">/);
+        assert.match(page, /<meta property="og:image" content="https:\/\/i\.ytimg\.com\/vi\/abcdefghijk\/hqdefault\.jpg">/);
         assert.match(page, /<meta property="og:url" content="https:\/\/byui-cse\.github\.io\/cse-videos\/videos\/lecture\/">/);
         assert.match(page, /<meta property="og:image:width" content="480">/);
         assert.match(page, /<meta property="og:image:height" content="360">/);
         assert.match(page, /<meta property="og:image:alt" content="A lecture">/);
         assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
-        assert.match(page, /<meta name="twitter:image" content="https:\/\/i\.ytimg\.com\/vi\/dQw4w9WgXcQ\/hqdefault\.jpg">/);
+        assert.match(page, /<meta name="twitter:image" content="https:\/\/i\.ytimg\.com\/vi\/abcdefghijk\/hqdefault\.jpg">/);
         assert.match(page, /<meta name="twitter:title" content="A lecture">/);
         assert.match(page, /<meta name="twitter:description"/);
         assert.match(page, /<meta property="og:type" content="video.other">/);
@@ -330,5 +342,42 @@ describe("404 page", () => {
     it("keeps the skip link on the page", async () => {
         const page = await read("404.html");
         assert.match(page, /<a class="skip-link" href="#main">/);
+    });
+});
+
+
+describe("video text hygiene", () => {
+    const site = { videos: [], tags: [], names: {}, covers: new Map(), siteUrl: "https://example.com/" };
+    const render = (overrides) => videoPage(site, { ...VIDEOS[0], ...overrides });
+
+    it("omits repeated titles and series labels and builds sharing descriptions from data", () => {
+        for (const description of ["Showcase: Micro Mouse!", "Career Quest - Part 4:"]) {
+            const page = render({ title: "Showcase micro-mouse", description, length: "0:39", datePosted: "2026-09-17" });
+            assert.doesNotMatch(page, /class="video__description/);
+            const fallback = "A 39-second video from BYU-Idaho Computer Science and Engineering, posted September 17, 2026.";
+            assert.ok(page.includes(`<meta name="description" content="${fallback}">`));
+            assert.ok(page.includes(`<meta property="og:description" content="${fallback}">`));
+        }
+        assert.match(render({ description: "", length: undefined }), /A video from BYU-Idaho/);
+        assert.match(render({ description: "Career Quest - Part 4: More to learn." }), /class="video__description/);
+    });
+
+    it("renders escaped named credit links with no raw URL text", () => {
+        const page = render({ attributions: ['Photo by [A & B](https://example.com/photo), used under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)'] });
+        assert.match(page, /<a href="https:\/\/example.com\/photo">A &amp; B<\/a>/);
+        assert.doesNotMatch(page, />https:\/\/example.com|>https:\/\/creativecommons/);
+    });
+
+    it("uses curly quotes in visible and sharing text", () => {
+        const page = render({ title: 'Don\'t say "no"', description: 'It\'s a "start".' });
+        assert.ok(page.includes("Don’t say “no”"));
+        assert.ok(page.includes('content="It’s a “start”."'));
+    });
+
+    it("uses real cover dimensions for cards and sharing metadata", async () => {
+        const page = await read("videos/older-reel/index.html");
+        assert.match(page, /property="og:image:width" content="480"/);
+        assert.match(page, /property="og:image:height" content="750"/);
+        assert.match(await read("index.html"), /covers\/older-reel.jpg"[^>]*width="480" height="750"/);
     });
 });
