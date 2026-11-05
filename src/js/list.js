@@ -25,7 +25,8 @@ export const initList = () => {
     const headingText = heading?.textContent ?? "";
     const baseTitle = document.title;
     const defaultOrder = list.dataset.defaultOrder === "oldest" ? "oldest" : "newest";
-    let shownOrder = "newest";
+    // The build writes the cards in the list's default order.
+    let shownOrder = defaultOrder;
 
     const params = readListParams(window.location.search, defaultOrder);
 

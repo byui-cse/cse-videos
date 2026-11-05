@@ -1,7 +1,8 @@
 /**
- * Return to the list page that led to this video.
+ * Return to the list page that led to this video. A plain click goes back in
+ * the history, so the list keeps its place; anything else follows the link.
  */
-import { backTarget } from "./state.js";
+import { backTarget, isPlainClick } from "./state.js";
 
 export const initBack = () => {
     const link = document.querySelector("[data-back]");
@@ -27,9 +28,33 @@ export const initBack = () => {
         link.textContent = tagLink ? `Back to ${tagLink.textContent.trim()}` : "Back to tag";
     }
 
+    // Mark the entry this page first loaded into, if there is an entry before
+    // it: that one is the list page. A reload or a return through the history
+    // keeps the mark; entries added later, like #main from the skip link, have
+    // none. A page opened in a new tab has nothing to go back to.
+    const [arrival] = performance.getEntriesByType("navigation");
+
+    if (arrival?.type === "navigate" && history.length > 1) {
+        history.replaceState({ ...history.state, backEntry: true }, "");
+    }
+
+    let leaving = false;
+
+    // A page restored from the back-forward cache is no longer leaving.
+    window.addEventListener("pageshow", () => {
+        leaving = false;
+    });
+
     link.addEventListener("click", (event) => {
-        if (history.length > 1) {
-            event.preventDefault();
+        if (!isPlainClick(event) || history.state?.backEntry !== true) {
+            return;
+        }
+
+        event.preventDefault();
+
+        // A second click before the list page shows would go back twice.
+        if (!leaving) {
+            leaving = true;
             history.back();
         }
     });

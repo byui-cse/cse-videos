@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
-import { videoPage } from "../lib/render.js";
+import { tagPage, videoPage } from "../lib/render.js";
 import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
@@ -229,6 +230,49 @@ describe("tag pages", () => {
     });
 });
 
+describe("series tag pages", () => {
+    const part = (number) => ({
+        id: `quest-part-${number}`,
+        title: `Quest, Part ${number}`,
+        instagram: `https://www.instagram.com/reel/QUEST${number}/`,
+        datePosted: `2026-10-2${number}`,
+        tags: ["quest", "story", "job-search"],
+        series: "quest",
+        part: number
+    });
+    const other = { id: "other", title: "Other", instagram: "https://www.instagram.com/reel/OTHER/", datePosted: "2026-11-01", tags: ["job-search"] };
+    const videos = [part(2), part(3), part(1), other];
+    const site = { videos, tags: [], names: {}, covers: new Map(videos.map((video) => [video.id, { width: 480, height: 750 }])), siteUrl: null };
+    const cards = (page) => [...page.matchAll(/<li class="video-card"[^>]*data-order="(\d+)">[\s\S]*?href="\.\.\/\.\.\/videos\/([\w-]+)\/"/g)]
+        .map((match) => ({ id: match[2], order: Number(match[1]) }));
+
+    it("open on Part 1, keep newest-first positions for the sort, and count the parts", () => {
+        const page = tagPage(site, { slug: "quest", name: "Quest", count: 3 });
+
+        assert.deepEqual(cards(page), [
+            { id: "quest-part-1", order: 2 },
+            { id: "quest-part-2", order: 1 },
+            { id: "quest-part-3", order: 0 }
+        ]);
+        assert.match(page, /<ul class="video-grid" data-video-list data-default-order="oldest">/);
+        assert.match(page, /<option value="newest">Newest first<\/option>\s*<option value="oldest" selected>Oldest first<\/option>/);
+        assert.match(page, /<p class="page-head__note">3 parts<span aria-hidden="true"> · <\/span><a href="\.\.\/">See all tags<\/a><\/p>/);
+    });
+
+    it("are only tags whose every video is a part of that series", () => {
+        for (const slug of ["job-search", "story"]) {
+            const page = tagPage(site, { slug, name: slug, count: 0 });
+            const shown = cards(page);
+
+            assert.deepEqual(shown.map((card) => card.order), shown.map((card, index) => index), slug);
+            assert.equal(shown[0].id, slug === "story" ? "quest-part-3" : "other", slug);
+            assert.match(page, /<ul class="video-grid" data-video-list>/, slug);
+            assert.ok(!page.includes(" selected"), slug);
+            assert.match(page, /<p class="page-head__note"><a href="\.\.\/">See all tags<\/a><\/p>/, slug);
+        }
+    });
+});
+
 describe("every page", () => {
     it("tints the phone browser bar navy and preloads both fonts, like the CS & SE site", async () => {
         for (const file of ["index.html", "tags/index.html", "videos/lecture/index.html", "404.html"]) {
@@ -236,6 +280,35 @@ describe("every page", () => {
             assert.match(page, /<meta name="theme-color" content="#004c86" media="\(prefers-color-scheme: light\)">/, file);
             assert.match(page, /fonts\/source-sans-3-latin-wght-normal\.woff2" as="font"/, file);
             assert.match(page, /fonts\/source-serif-4-latin-wght-normal\.woff2" as="font"/, file);
+        }
+    });
+});
+
+describe("content security policy", () => {
+    const policy = (page) => page.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/)[1].replaceAll("&#39;", "'");
+    const scriptSrc = (page) => policy(page).split("; ").find((directive) => directive.startsWith("script-src "));
+    const inlineScripts = (page) => [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+
+    it("allows the Instagram message queue on Instagram video pages by the hash of its text", async () => {
+        for (const file of ["videos/sample-short/index.html", "videos/older-reel/index.html"]) {
+            const page = await read(file);
+            const scripts = inlineScripts(page);
+            assert.equal(scripts.length, 1, file);
+            assert.match(scripts[0], /window\.instagramMessages/, file);
+            const hash = createHash("sha256").update(scripts[0]).digest("base64");
+            assert.equal(scriptSrc(page), `script-src 'self' 'sha256-${hash}'`, file);
+            // A policy in a meta tag covers only what comes after it.
+            assert.ok(page.indexOf("Content-Security-Policy") < page.indexOf("<script>"), file);
+            assert.ok(page.indexOf("<script>") < page.indexOf("</head>"), file);
+        }
+    });
+
+    it("keeps inline scripts and hashes off pages without an Instagram player", async () => {
+        for (const file of ["index.html", "tags/index.html", "tags/job-search/index.html", "404.html", "videos/lecture/index.html"]) {
+            const page = await read(file);
+            assert.deepEqual(inlineScripts(page), [], file);
+            assert.equal(scriptSrc(page), "script-src 'self'", file);
+            assert.ok(!page.includes("sha256-"), file);
         }
     });
 });
@@ -364,6 +437,12 @@ describe("video text hygiene", () => {
         const page = render({ attributions: ['Photo by [A & B](https://example.com/photo), used under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)'] });
         assert.match(page, /<a href="https:\/\/example.com\/photo">A &amp; B<\/a>/);
         assert.doesNotMatch(page, />https:\/\/example.com|>https:\/\/creativecommons/);
+    });
+
+    it("keeps link markup out of the sharing description", () => {
+        const page = render({ description: "Thanks to [Jane](https://example.com/jane) for the music." });
+        assert.ok(page.includes('<meta name="description" content="Thanks to Jane for the music.">'));
+        assert.ok(page.includes('<a href="https://example.com/jane">Jane</a>'));
     });
 
     it("uses curly quotes in visible and sharing text", () => {

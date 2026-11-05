@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { backTarget, countText, listUrl, measuredHeight, playerState, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
+import { backTarget, countText, isPlainClick, listUrl, measuredHeight, playerState, playerUrl, plural, readListParams, requestedSource, shareMode } from "../src/js/state.js";
 
 describe("list address", () => {
     it("reads the search and order, falling back to newest first", () => {
@@ -79,6 +79,15 @@ describe("back link", () => {
         assert.equal(backTarget("", here), null);
         assert.equal(backTarget("https://example.org/videos/another/", here), null);
         assert.equal(backTarget("not a URL", here), null);
+    });
+
+    it("takes over only a plain click with the main button", () => {
+        const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false };
+        assert.equal(isPlainClick(click), true);
+
+        for (const change of [{ button: 1 }, { button: 2 }, { metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { defaultPrevented: true }]) {
+            assert.equal(isPlainClick({ ...click, ...change }), false, JSON.stringify(change));
+        }
     });
 });
 

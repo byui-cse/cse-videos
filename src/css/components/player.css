@@ -95,6 +95,15 @@
 	font-weight: var(--weight-semibold);
 }
 
+/* Says the Instagram player may be blocked, between the controls and the
+   video. No wider than the expanded Instagram player. */
+.player__status {
+	max-width: 33.75rem;
+	margin: 0;
+	font-family: var(--font-ui);
+	font-size: var(--text-sm);
+}
+
 .player__source {
 	min-height: var(--touch-min);
 	padding: 0.4rem 0.9rem;
@@ -151,8 +160,13 @@
 		width: min(100%, calc((100dvh - 6rem) * 16 / 9));
 	}
 
-	.player__sources-label {
+	.player__sources-label,
+	.player__status {
 		color: #c9d3dd;
+	}
+
+	.player__status a {
+		color: var(--color-band-accent);
 	}
 
 	:focus-visible {

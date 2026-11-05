@@ -76,7 +76,9 @@ export const initPlayer = () => {
             link.href = postUrl.href;
             link.textContent = "Watch on Instagram";
             status.append(link);
-            frame.after(status);
+            // Before the frame, which the controls sit above, so the message
+            // is between them and on the first screen.
+            frame.before(status);
         }
 
         if (status) {
@@ -137,16 +139,18 @@ export const initPlayer = () => {
         button.addEventListener("click", () => show(button.getAttribute("data-source-button") ?? "", true));
     }
 
-    // Instagram's player posts its height to the page; without it the frame
-    // would cut off or leave a gap.
-    window.addEventListener("message", (event) => {
-        if (event.origin !== INSTAGRAM_ORIGIN
-            || event.source !== iframe.contentWindow
-            || player.dataset.source !== "instagram") {
+    /**
+     * A message from Instagram's player. It posts its height to the page;
+     * without it the frame would cut off or leave a gap.
+     * @param {unknown} data
+     * @param {MessageEventSource | null} source
+     */
+    const receive = (data, source) => {
+        if (source !== iframe.contentWindow || player.dataset.source !== "instagram") {
             return;
         }
 
-        let message = event.data;
+        let message = data;
 
         if (typeof message === "string") {
             try {
@@ -168,6 +172,18 @@ export const initPlayer = () => {
 
         if (height !== null) {
             iframe.style.height = `${height}px`;
+        }
+    };
+
+    // The player can load and post before this module runs. A script in the
+    // page's head (lib/render.js) keeps those messages; replay them first.
+    for (const { data, source } of window.instagramMessages ?? []) {
+        receive(data, source);
+    }
+
+    window.addEventListener("message", (event) => {
+        if (event.origin === INSTAGRAM_ORIGIN) {
+            receive(event.data, event.source);
         }
     });
 

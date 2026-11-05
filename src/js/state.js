@@ -122,6 +122,16 @@ export const playerState = ({ source, elapsedMs, sawInstagramMessage }) => {
 export const shareMode = ({ canShare, coarsePointer }) => canShare && coarsePointer ? "share" : "copy";
 
 /**
+ * True for a plain click with the main button. With Cmd, Ctrl, Shift or Alt
+ * held the browser opens a new tab or window or downloads the link, so a page
+ * should leave the click alone; the same goes for one another handler took.
+ * @param {{ button: number, metaKey: boolean, ctrlKey: boolean, shiftKey: boolean, altKey: boolean, defaultPrevented: boolean }} click
+ */
+export const isPlainClick = (click) => click.button === 0
+    && !click.metaKey && !click.ctrlKey && !click.shiftKey && !click.altKey
+    && !click.defaultPrevented;
+
+/**
  * A list page that led to this video, if it belongs to this site.
  * @param {string} referrer
  * @param {string} here
