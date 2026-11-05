@@ -20,6 +20,7 @@ The site runs at http://localhost:5190 and rebuilds whenever you save a file. Re
 | `npm run build` | Builds the site into `dist/` |
 | `npm run validate` | Checks `data/videos.json` and `data/tags.json` and lists any problems |
 | `npm test` | Runs the tests |
+| `npm run test:e2e` | Runs the browser tests in headless Chromium (run `npx playwright install chromium` once first) |
 
 ## Pages and links
 
