@@ -28,7 +28,7 @@ Everything is in the address, so any view can be shared by copying the link.
 
 | Address | Shows |
 | --- | --- |
-| `/` | The headline and the search beside a card holding every video's still, then every video newest first, the topics, and Career Quest. A search lights the matching stills in the card and brings them to its front rows. On a phone the list opens on its first 13 videos with a button for the rest; a search always looks through all of them. |
+| `/` | The headline and the search beside a card holding every video's still, then every video newest first, the topics, and Career Quest. A search filters the list and leaves the card as it is. On a phone the list opens on its first 13 videos with a button for the rest; a search always looks through all of them. |
 | `/wall/` | The Video wall: every video's still in small columns at least a screen tall, with the search in a strip that stays at the foot of the screen as the wall scrolls. On a screen 480 px tall or less, like a phone held sideways, the strip comes first instead. A search lights the stills that match and dims the rest; Enter goes to the first match. A video opened from here links back to the wall, or to its search. |
 | `/wall/?q=portfolio` | The Video wall with that search lit |
 | `/?q=portfolio` | A search. Every word typed has to match the start of a word in the title, description, tags, or credits. Common plurals and -ing or -ed forms count, so "jobs" finds "job", "getting" finds "get", and "coding" finds "code". |

@@ -106,19 +106,8 @@
 	filter: brightness(var(--photo-brightness)) saturate(1);
 }
 
-.wall--card:has(.wall__link:hover) .wall__still:not(:hover, .is-dim) picture {
+.wall--card:has(.wall__link:hover) .wall__still:not(:hover) picture {
 	opacity: 0.45;
-}
-
-/* While a search lights some of the card's stills, they move to the front
-   rows and the columns drop their lifts, so the matches are the stills on
-   show, in a plain grid with no gaps. */
-.wall--card:has(.is-match) .wall__still:nth-child(n) {
-	--lift: 0;
-}
-
-.wall--card .wall__still.is-match {
-	order: -1;
 }
 
 .wall__edge {

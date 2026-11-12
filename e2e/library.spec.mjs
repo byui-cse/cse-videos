@@ -395,7 +395,10 @@ test("pointing at a still in the hero's card names it under the card, dims the o
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const wall = page.locator("[data-wall]");
-    assert.equal(await wall.locator("[data-id]:not(.wall__still--echo) a").count(), videos.length);
+    // The card is a picture of the library: twenty stills, no two the same.
+    const ids = await wall.locator("[data-id]").evaluateAll((items) => items.map((item) => item.dataset.id));
+    assert.equal(ids.length, 20);
+    assert.equal(new Set(ids).size, Math.min(20, videos.length));
     const label = page.locator("[data-wall-caption]");
     assert.equal(await label.evaluate((node) => getComputedStyle(node).opacity), "0");
     // A still the card shows whole.
@@ -552,43 +555,34 @@ test("on a phone the index opens on thirteen videos, and a search still looks th
     assert.equal(await wide.getByRole("searchbox").getAttribute("placeholder"), "Try portfolio, interviews or internships");
 });
 
-test("a search lights its stills on the wall and closes up the index", async (t) => {
+test("a search closes up the index and leaves the hero's card as it is", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const leadBox = await cards(page).first().boundingBox();
     const tileBox = await cards(page).nth(1).boundingBox();
-    await page.getByRole("searchbox", { name: "Search videos" }).fill("portfolio");
+    const card = () => page.locator("[data-wall] [data-id]").evaluateAll((items) => items.map((item) => {
+        const box = item.getBoundingClientRect();
+        const style = getComputedStyle(item);
+        return [item.dataset.id, item.className, Math.round(box.x), Math.round(box.y), style.opacity, getComputedStyle(item.querySelector("picture")).opacity];
+    }));
+    const before = await card();
+
+    for (const query of ["portfolio", "robot", "nothing matches this"]) {
+        await page.getByRole("searchbox", { name: "Search videos" }).fill(query);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForFunction(() => document.querySelector("[data-video-list]").getAnimations({ subtree: true }).length === 0);
+        assert.deepEqual(await card(), before, query);
+    }
+
+    await page.getByRole("searchbox").fill("portfolio");
     const shown = await shownIds(page);
     assert.ok(shown.length > 0 && shown.length < videos.length);
-    const lit = await page.locator("[data-wall] .is-match").evaluateAll((items) => [...new Set(items.map((item) => item.dataset.id))]);
-    assert.deepEqual(lit.sort(), [...shown].sort());
-    // Every copy of a match in the card is lit, and every other still dimmed.
-    const copies = await page.locator("[data-wall] [data-id]").evaluateAll((items, ids) => items.filter((item) => ids.includes(item.dataset.id)).length, shown);
-    assert.equal(await page.locator("[data-wall] .is-match").count(), copies);
-    assert.equal(await page.locator("[data-wall] .is-dim").count(), await page.locator("[data-wall] [data-id]").count() - copies);
     // Every match is drawn at one size, the first where the newest video was.
     assert.equal(await page.locator("[data-video-list] > .tile--lead").count(), 0);
     await page.waitForFunction(() => document.querySelector("[data-video-list]").getAnimations({ subtree: true }).length === 0);
     const firstBox = await cards(page).first().boundingBox();
     assert.deepEqual([firstBox.x, firstBox.y], [leadBox.x, leadBox.y]);
     assert.deepEqual(await cards(page).evaluateAll((items) => [...new Set(items.map((item) => Math.round(item.getBoundingClientRect().width)))]), [Math.round(tileBox.width)]);
-    assert.equal(await page.locator("[data-wall] .is-match .wall__edge").first().evaluate((node) => getComputedStyle(node).opacity), "1");
-
-    // The card brings its matches to its front rows, so every one is on show.
-    for (const query of ["portfolio", "robot"]) {
-        await page.getByRole("searchbox").fill(query);
-        await page.evaluate(() => window.scrollTo(0, 0));
-        const hidden = await page.evaluate(() => {
-            const card = document.querySelector(".hero__card").getBoundingClientRect();
-            return [...document.querySelectorAll("[data-wall] .is-match")].filter((item) => {
-                const box = item.getBoundingClientRect();
-                return box.top < card.top - 1 || box.top + box.height / 2 > card.bottom || box.left < card.left - 1 || box.right > card.right + 1;
-            }).map((item) => item.dataset.id);
-        });
-        assert.deepEqual(hidden, [], query);
-    }
-
-    await page.getByRole("searchbox").fill("");
     assert.equal(await page.locator("[data-wall] .is-match, [data-wall] .is-dim").count(), 0);
 });
 

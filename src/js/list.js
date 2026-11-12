@@ -1,10 +1,10 @@
 /**
  * Search and sort for a grid of videos. Everything lives in the address, so a
- * search like ?q=portfolio&sort=oldest can be shared as a link. On the home
- * page a search also lights the matching stills on the wall and dims the
- * rest, and the grid closes up around what is left. On a phone the home
- * page's index opens on its first few videos with a button for the rest; a
- * search always looks through all of them.
+ * search like ?q=portfolio&sort=oldest can be shared as a link, and the grid
+ * closes up around what is left. The home page's hero stays as it is: a
+ * search changes only the list. On a phone the home page's index opens on
+ * its first few videos with a button for the rest; a search always looks
+ * through all of them.
  */
 import { matches } from "./search.js";
 import { countText, listUrl, orderText, readListParams } from "./state.js";
@@ -67,14 +67,6 @@ export const initList = () => {
         words: (card.getAttribute("data-search") ?? "").split(" "),
         order: Number(card.getAttribute("data-order"))
     }));
-    // Every still on the hero's wall by video, echoes included.
-    const stills = new Map();
-
-    for (const still of document.querySelectorAll("[data-wall] [data-id]")) {
-        const id = still.getAttribute("data-id");
-        stills.set(id, [...(stills.get(id) ?? []), still]);
-    }
-
     const input = /** @type {HTMLInputElement | null} */ (document.querySelector("[data-search-input]"));
     const sort = /** @type {HTMLSelectElement | null} */ (document.querySelector("[data-sort]"));
     const results = document.querySelector("[data-results]");
@@ -177,15 +169,10 @@ export const initList = () => {
 
             shown = 0;
 
-            for (const { card, id, words } of cards) {
+            for (const { card, words } of cards) {
                 const show = matches(words, query);
                 card.hidden = !show;
                 shown += show ? 1 : 0;
-
-                for (const still of stills.get(id) ?? []) {
-                    still.classList.toggle("is-match", query !== "" && show);
-                    still.classList.toggle("is-dim", query !== "" && !show);
-                }
             }
 
             // Past the fold the rest wait for "Show all" (CSS hides them on
