@@ -346,7 +346,7 @@ test("unknown paths serve the 404 page with a working home link", async (t) => {
     const { page } = await site.page(t);
     const response = await page.goto("/missing/nested/page");
     assert.equal(response.status(), 404);
-    assert.equal(await page.getByRole("heading", { name: "This address doesn’t go to a video or a tag" }).count(), 1);
+    assert.equal(await page.getByRole("heading", { name: "Page not found", level: 1 }).count(), 1);
     assert.equal(await page.title(), "Page not found | CSE Videos");
     await page.getByRole("link", { name: "See all videos", exact: true }).click();
     assert.equal(page.url(), `${site.origin}/`);

@@ -1,6 +1,8 @@
 /**
  * Element type and the shared section heading. Display type in the semi
- * condensed cut at weight 800; running text in Sofia Sans.
+ * condensed cut at weight 800; running text in Sofia Sans. Headings balance
+ * their lines; running text avoids leaving one word on its last line. A word
+ * only breaks inside itself when it is wider than its box.
  */
 h1,
 h2,
@@ -8,6 +10,16 @@ h3,
 p {
 	margin: 0;
 	overflow-wrap: break-word;
+}
+
+body {
+	text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+	text-wrap: balance;
 }
 
 a {
@@ -22,7 +34,7 @@ time {
 .section-title {
 	color: var(--ink);
 	font-family: var(--display);
-	font-size: var(--step-4);
+	font-size: var(--h2);
 	font-weight: 800;
 	line-height: 1.05;
 	letter-spacing: -0.02em;
@@ -33,7 +45,7 @@ time {
 }
 
 .section-title--small {
-	font-size: var(--step-3);
+	font-size: var(--h3);
 	line-height: 1.12;
 	letter-spacing: -0.015em;
 }
@@ -48,9 +60,7 @@ time {
 }
 
 @media (max-width: 699px) {
-	/* Section titles a step under the strip's headline on a phone. */
 	.section-title {
-		font-size: 28px;
 		line-height: 1.12;
 		letter-spacing: -0.01em;
 	}

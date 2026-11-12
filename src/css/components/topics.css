@@ -1,18 +1,21 @@
 /**
- * Topics two ways. On the home page, a directory: four columns of small rows,
- * each a 96 px still, the name as the link, the count and running time. On
- * the topics page, photo cards in six columns like the index, the two most
- * used topics taking two cells and two reels.
+ * Topics two ways, on paper. On the home page (and the missing page), a
+ * directory of rows, each a small still beside the name as the link,
+ * the count and running time; the rows start their names on one line, so a
+ * name that wraps never sets its row off. The columns are as wide as the
+ * longest word in a name needs: four from 1300 px, three from 1000, two from
+ * 520, one under that. On the topics page, photo cards in six columns like
+ * the index; the two most used topics take two cells and two stills, set
+ * close as one picture and as tall as the rest.
  */
 .topics {
-	padding: 128px 0;
-	border-top: 1px solid var(--line);
-	background: var(--surface);
+	padding: var(--section-m) 0 var(--section-l);
+	background: var(--paper);
 }
 
-.topics--page {
-	padding: 72px 0 136px;
-	border-top: 0;
+/* Straight after the index, on the same paper, the index's foot is the gap. */
+.index + .topics {
+	padding-top: 0;
 }
 
 .topic-list {
@@ -27,7 +30,7 @@
 .topic-row {
 	position: relative;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 16px;
 	min-width: 0;
 	padding-bottom: 24px;
@@ -57,7 +60,7 @@
 
 .topic-row__name {
 	font-family: var(--display);
-	font-size: var(--step-2);
+	font-size: var(--h4);
 	font-weight: 800;
 	line-height: 1.12;
 	letter-spacing: -0.01em;
@@ -109,10 +112,11 @@
 }
 
 .topic-grid {
+	--topic-gap: 24px;
 	display: grid;
 	grid-template-columns: repeat(6, minmax(0, 1fr));
 	grid-auto-flow: dense;
-	gap: 48px 24px;
+	gap: 48px var(--topic-gap);
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -121,6 +125,7 @@
 .topic {
 	position: relative;
 	min-width: 0;
+	container-type: inline-size;
 }
 
 .topic--wide {
@@ -131,7 +136,7 @@
 	display: grid;
 	grid-auto-columns: minmax(0, 1fr);
 	grid-auto-flow: column;
-	gap: 24px;
+	gap: 4px;
 }
 
 .topic__image {
@@ -140,6 +145,13 @@
 	overflow: hidden;
 	border-radius: 0;
 	background: var(--tint);
+}
+
+/* A wide card's two stills share its two cells and the gap between them, at
+   the height of one cell's still, so its name lines up with the row's. */
+.topic--wide .topic__image {
+	aspect-ratio: auto;
+	height: calc((100cqw - var(--topic-gap)) / 2 * 750 / 480);
 }
 
 .topic__image img {
@@ -151,13 +163,21 @@
 	transform: scale(1.04);
 }
 
+/* A name is never wider than its column needs for its longest word
+   ("Cybersecurity" is 6 em): where a column is narrow, about 150 px at
+   1100 px or 134 px at 320, the names in it are a little smaller. */
 .topic__name {
+	--column: 100cqw;
 	margin-top: 16px;
 	font-family: var(--display);
-	font-size: var(--step-2);
+	font-size: min(var(--h4), var(--column) / 6.25);
 	font-weight: 800;
 	line-height: 1.2;
 	letter-spacing: -0.01em;
+}
+
+.topic--wide .topic__name {
+	--column: (100cqw - var(--topic-gap)) / 2;
 }
 
 /* The name's link covers the whole card. */
@@ -194,36 +214,32 @@
 	font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1299px) {
 	.topic-list {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
+}
 
+@media (max-width: 1099px) {
 	.topic-grid {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 }
 
-@media (max-width: 699px) {
-	.topics {
-		padding: 80px 0 88px;
-	}
-
-	.topics--page {
-		padding: 48px 0 88px;
-	}
-
-	.topic-grid {
+@media (max-width: 999px) {
+	.topic-list {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 36px 12px;
 	}
+}
 
-	.topic__images {
-		gap: 12px;
+@media (max-width: 699px) {
+	.topic-grid {
+		--topic-gap: 12px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		row-gap: 36px;
 	}
 
 	.topic-list {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 16px 12px;
 	}
 
@@ -235,16 +251,20 @@
 	.topic-row__image {
 		flex-basis: 56px;
 	}
+}
 
-	.topic-row__name {
-		font-size: 19px;
+/* One column of short rows: a smaller still keeps the list compact. */
+@media (max-width: 519px) {
+	.topic-list {
+		grid-template-columns: minmax(0, 1fr);
+		row-gap: 12px;
 	}
 
-	.topic-row__time {
-		display: block;
+	.topic-row {
+		padding-bottom: 12px;
 	}
 
-	.topic-row__time::before {
-		content: none;
+	.topic-row__image {
+		flex-basis: 48px;
 	}
 }
