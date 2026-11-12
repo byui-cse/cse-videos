@@ -261,7 +261,7 @@
    page, so the wordmark, two links and the search button keep one row and
    the hero keeps the first screen. */
 @media (max-width: 359px) {
-	.site-nav__list > li:first-child {
+	.site-nav__videos {
 		display: none;
 	}
 }
