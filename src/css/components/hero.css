@@ -1,0 +1,229 @@
+/**
+ * The home page's hero, in the CS & SE site's manner: a blue gradient under
+ * a faint grid, the headline (its second line gold) and the search on the
+ * left, and on the right a framed card holding the wall, shrunk. On a laptop
+ * or tablet in landscape it ends about three quarters of the way down the
+ * first screen or sooner, so the index starts on it. Pointing at a still in
+ * the card names it in a label at the card's corner.
+ */
+.hero {
+	position: relative;
+	overflow: hidden;
+	overflow: clip;
+	background: linear-gradient(140deg, var(--hero-start) 0%, var(--band) 38%, var(--band-deep) 100%);
+	color: #fff;
+}
+
+.hero::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image:
+		linear-gradient(var(--hero-grid) 1px, transparent 1px),
+		linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
+	background-size: 72px 72px;
+	pointer-events: none;
+}
+
+.hero :focus-visible {
+	outline-color: var(--focus-on-band);
+}
+
+.hero__inner {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+	align-items: center;
+	gap: 64px;
+	padding-block: 56px 60px;
+}
+
+.hero__title {
+	margin-bottom: 26px;
+	color: #fff;
+	font-family: var(--display);
+	font-size: clamp(38px, 26px + 2.8vw, 64px);
+	font-weight: 800;
+	line-height: 1.02;
+	letter-spacing: -0.025em;
+}
+
+.hero__line {
+	display: block;
+}
+
+.hero__line--accent {
+	color: var(--gold);
+}
+
+.hero__facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 26px;
+	margin: 20px 0 0;
+	padding: 0;
+	list-style: none;
+	color: var(--on-hero-muted);
+	font-size: 16px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.hero__facts li {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.hero__facts li::before {
+	content: "";
+	flex: 0 0 auto;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--gold);
+}
+
+.hero__facts a {
+	color: #fff;
+	text-underline-offset: 4px;
+}
+
+.hero__facts a:hover {
+	color: var(--gold);
+}
+
+/* The card: a window onto the wall, with square stills inside a 14 px frame. */
+.hero__card {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	overflow: clip;
+	border: 1px solid rgb(255 255 255 / 16%);
+	border-radius: 14px;
+	background: var(--band-deep);
+	box-shadow: 0 30px 70px rgb(0 16 34 / 50%);
+}
+
+.hero__pointing {
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	z-index: 2;
+	max-width: calc(100% - 24px);
+	padding: 7px 11px 8px;
+	border-radius: 4px;
+	background: var(--band-deep);
+	color: #fff;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.25;
+	opacity: 0;
+	transform: translateY(-4px);
+	transition: opacity 160ms var(--state), transform 160ms var(--state);
+	pointer-events: none;
+}
+
+.hero__pointing.is-shown {
+	opacity: 1;
+	transform: none;
+}
+
+/* The one rounded control, floating on the card like a player's button. */
+.hero__open {
+	position: absolute;
+	right: 14px;
+	bottom: 14px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 0 18px;
+	border-radius: 999px;
+	background: #fff;
+	color: var(--blue);
+	font-size: 16px;
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+	box-shadow: 0 6px 18px rgb(0 16 34 / 35%);
+	transition: background-color 180ms var(--state), color 180ms var(--state);
+}
+
+.hero__open:hover {
+	background: #e8f0f8;
+	color: var(--band);
+}
+
+.hero__open .arrow-icon {
+	transition: transform 180ms var(--state);
+}
+
+.hero__open:hover .arrow-icon {
+	transform: translateX(3px);
+}
+
+/* From 800 to 1099 px the copy and a 4:3 card share the row; from 700 to
+   799 px the copy sits over a 3:1 card. */
+@media (max-width: 1099px) {
+	.hero__inner {
+		gap: 40px;
+		padding-block: 44px 48px;
+	}
+
+	.hero__title {
+		margin-bottom: 22px;
+		font-size: 44px;
+	}
+
+	.hero__card {
+		aspect-ratio: 4 / 3;
+	}
+}
+
+@media (max-width: 799px) {
+	.hero__inner {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 32px;
+		padding-block: 40px 44px;
+	}
+
+	.hero__title {
+		font-size: clamp(38px, 26px + 2.8vw, 48px);
+	}
+
+	.hero__card {
+		aspect-ratio: 3 / 1;
+	}
+}
+
+@media (max-width: 699px) {
+	.hero__inner {
+		gap: 26px;
+		padding-block: 30px 32px;
+	}
+
+	.hero__title {
+		margin-bottom: 18px;
+	}
+
+	.hero__card {
+		aspect-ratio: 16 / 9;
+		border-radius: 10px;
+	}
+
+	.hero__open {
+		right: 10px;
+		bottom: 10px;
+		padding: 0 16px;
+		font-size: 15px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hero__pointing,
+	.hero__open:hover .arrow-icon {
+		transform: none;
+	}
+}

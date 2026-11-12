@@ -12,7 +12,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
 import { writeCoverDerivatives } from "../lib/images.js";
-import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
+import { homePage, notFoundPage, tagPage, tagsPage, videoPage, videoWallPage } from "../lib/render.js";
+import { wallStageCss, wallTotal } from "../lib/wall.js";
 import { robotsTxt, sitemapXml } from "../lib/seo.js";
 import { collectTags, plural } from "../lib/site.js";
 import { checkCovers, loadTagNames, loadVideos, validateTagNames, validateVideos } from "../lib/videos.js";
@@ -117,7 +118,8 @@ export const build = async ({
     });
 
     const { code } = bundle({ filename: path.join(cssDir, "main.css"), minify: true, targets: TARGETS });
-    await writeFile(path.join(staging, "css", "main.css"), code);
+    // The Video wall's row counts depend on how many videos there are.
+    await writeFile(path.join(staging, "css", "main.css"), `${code}\n${wallStageCss(videos.length, wallTotal(videos.length))}\n`);
 
     await writeCoverDerivatives({ covers, srcDir, outDir: staging });
 
@@ -126,6 +128,7 @@ export const build = async ({
 
     const pages = new Map([
         ["index.html", homePage(site)],
+        ["wall/index.html", videoWallPage(site)],
         ["tags/index.html", tagsPage(site)],
         ["404.html", notFoundPage(site)]
     ]);
@@ -150,6 +153,7 @@ export const build = async ({
         // worse than none.
         const entries = [
             { url: site.siteUrl },
+            { url: `${site.siteUrl}wall/` },
             { url: `${site.siteUrl}tags/` },
             ...site.tags.map((tag) => ({ url: `${site.siteUrl}tags/${tag.slug}/` })),
             ...videos.map((video) => ({ url: `${site.siteUrl}videos/${video.id}/` }))

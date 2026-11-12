@@ -1,8 +1,8 @@
 /**
- * The calm motion. On load the wall and its strip fade in once (300 ms) and
- * the line rises 10 px (360 ms). The still that was clicked travels into the
- * next page's player (300 ms), a response to a click. The wall's drift and
- * Career Quest's single reveal are in src/js/motion.js. Under reduced motion
+ * The calm motion. On load a wall and the Video wall's strip fade in once
+ * (300 ms) and the headline rises 10 px (360 ms). The still that was clicked
+ * travels into the next page's player (300 ms), a response to a click.
+ * Career Quest's single reveal is in src/js/motion.js. Under reduced motion
  * none of that plays and no still zooms, lifts or slides; the short fades
  * that answer a pointer or a search (the veil, the gold edge, the caption)
  * stay, since they don't move anything.
@@ -25,7 +25,8 @@
 		animation: fade-in 300ms var(--state) both;
 	}
 
-	.band__title {
+	.band__title,
+	.hero__title {
 		animation: rise 360ms var(--state) both;
 	}
 

@@ -352,7 +352,7 @@ test("unknown paths serve the 404 page with a working home link", async (t) => {
     assert.equal(page.url(), `${site.origin}/`);
 });
 
-for (const route of ["/", "/tags/", `/tags/${seriesTag}/`, videoPath]) {
+for (const route of ["/", "/wall/", "/tags/", `/tags/${seriesTag}/`, videoPath]) {
     test(`no page or console errors on ${route}`, async (t) => {
         const { page, aborted } = await site.page(t);
         const errors = [];
@@ -369,8 +369,8 @@ for (const route of ["/", "/tags/", `/tags/${seriesTag}/`, videoPath]) {
     });
 }
 
-for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
-    for (const route of ["/", "/tags/", videoPath]) {
+for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }, { width: 320, height: 640 }]) {
+    for (const route of ["/", "/wall/", "/tags/", videoPath]) {
         test(`no horizontal overflow at ${viewport.width}x${viewport.height} on ${route}`, async (t) => {
             const { page } = await site.page(t, { viewport });
             await page.goto(route);
@@ -381,25 +381,37 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }
     }
 }
 
-test("a still on the wall is a link that lights up and shows its title on hover", async (t) => {
+test("pointing at a still in the hero's card names it in the card's corner, and a click opens it", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const wall = page.locator("[data-wall]");
-    assert.equal(await wall.locator("a").count(), videos.length);
-    const still = wall.locator("[data-id]").first();
-    const caption = still.locator(".wall__caption");
+    assert.equal(await wall.locator("[data-id]:not(.wall__still--echo) a").count(), videos.length);
+    const label = page.locator("[data-wall-caption]");
+    assert.equal(await label.evaluate((node) => getComputedStyle(node).opacity), "0");
+    const still = wall.locator("[data-id]").nth(10);
     const id = await still.getAttribute("data-id");
-    assert.equal(await caption.textContent(), smartQuotes(videos.find((item) => item.id === id).title));
-    assert.equal(await caption.evaluate((node) => getComputedStyle(node).opacity), "0");
 
     await still.hover();
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await caption.elementHandle());
-    assert.equal(await still.locator(".wall__veil").evaluate((node) => getComputedStyle(node).opacity), "0");
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await label.elementHandle());
+    assert.equal(await label.textContent(), smartQuotes(videos.find((item) => item.id === id).title));
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await still.locator(".wall__veil").elementHandle());
 
     await page.mouse.move(0, 0);
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await caption.elementHandle());
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await label.elementHandle());
     await still.locator("a").click();
     await page.waitForURL(`**/videos/${id}/`);
+});
+
+test("the card's button opens the video wall", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/");
+    const open = page.getByRole("link", { name: "Open the video wall" });
+    const card = await page.locator(".hero__card").boundingBox();
+    const box = await open.boundingBox();
+    assert.ok(box.x >= card.x && box.x + box.width <= card.x + card.width && box.y + box.height <= card.y + card.height, "the button sits inside the card");
+    await open.click();
+    await page.waitForURL("**/wall/");
+    assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Video wall");
 });
 
 test("the wall stays out of the keyboard's way: tabbing from the search goes to the index", async (t) => {
@@ -409,20 +421,32 @@ test("the wall stays out of the keyboard's way: tabbing from the search goes to 
         assert.equal(await page.getByRole("list", { name: /wall/i }).count(), 0);
         assert.equal(await page.locator("[data-wall] a").evaluateAll((links) => links.every((link) => link.tabIndex === -1)), true);
 
+        // From the search, Tab goes to the topics link and the card's button, then
+        // into the index, never onto a still.
         await page.getByRole("searchbox", { name: "Search videos" }).focus();
-        await page.keyboard.press("Tab");
+        const stops = [];
+        for (let step = 0; step < 3; step++) {
+            await page.keyboard.press("Tab");
+            stops.push(await page.evaluate(() => document.activeElement.textContent.trim()));
+        }
+        assert.deepEqual(stops.slice(0, 2), [`${new Set(videos.flatMap((item) => item.tags)).size} topics`, "Open the video wall"], `${viewport.width}`);
         assert.equal(await page.evaluate(() => document.querySelector("#all-videos").contains(document.activeElement)), true, `${viewport.width}: focus left the index`);
         for (let step = 0; step < 6; step++) {
             await page.keyboard.press("Tab");
         }
 
-        const hero = await page.locator(".hero").evaluate((node) => ({ scrollTop: node.scrollTop, bottom: node.getBoundingClientRect().bottom }));
-        assert.equal(hero.scrollTop, 0, `${viewport.width}`);
+        assert.equal(await page.locator(".hero__card").evaluate((node) => node.scrollTop), 0, `${viewport.width}`);
         await page.evaluate(() => window.scrollTo(0, 0));
-        const band = await page.locator(".band").boundingBox();
+        // The headline, the search and the whole card are on the first screen, and
+        // the index starts under them.
+        const hero = await page.locator(".hero").boundingBox();
         const title = await page.getByRole("heading", { level: 1 }).boundingBox();
-        assert.ok(band.y >= 0 && band.y + band.height <= viewport.height + 1, `${viewport.width}: the band is on screen`);
-        assert.ok(title.y >= band.y && title.y + title.height <= band.y + band.height, `${viewport.width}: the headline is in the band`);
+        const search = await page.getByRole("searchbox", { name: "Search videos" }).boundingBox();
+        const card = await page.locator(".hero__card").boundingBox();
+        for (const [name, box] of [["headline", title], ["search", search], ["card", card]]) {
+            assert.ok(box.y >= hero.y && box.y + box.height <= Math.min(hero.y + hero.height, viewport.height) + 1, `${viewport.width}: the ${name} is on screen in the hero`);
+        }
+        assert.ok(hero.y + hero.height <= viewport.height * 0.75, `${viewport.width}: the hero leaves room for the index`);
     }
 });
 
@@ -453,6 +477,15 @@ test("clicking through the site raises no errors, view transitions included", as
     await settle();
     await page.goBack();
     await page.waitForURL(`${site.origin}/`);
+    await settle();
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Video wall" }).click();
+    await page.waitForURL("**/wall/");
+    await settle();
+    await page.getByRole("list", { name: "Every video" }).getByRole("link").nth(17).click();
+    await page.waitForURL(/\/videos\/[\w-]+\/$/);
+    await settle();
+    await page.goBack();
+    await page.waitForURL("**/wall/");
     await settle();
     assert.deepEqual(errors, []);
 });
@@ -499,9 +532,12 @@ test("a search lights its stills on the wall and closes up the index", async (t)
     await page.getByRole("searchbox", { name: "Search videos" }).fill("portfolio");
     const shown = await shownIds(page);
     assert.ok(shown.length > 0 && shown.length < videos.length);
-    const lit = await page.locator("[data-wall] .is-match").evaluateAll((items) => items.map((item) => item.dataset.id));
+    const lit = await page.locator("[data-wall] .is-match").evaluateAll((items) => [...new Set(items.map((item) => item.dataset.id))]);
     assert.deepEqual(lit.sort(), [...shown].sort());
-    assert.equal(await page.locator("[data-wall] .is-dim").count(), videos.length - shown.length);
+    // Every copy of a match in the card is lit, and every other still dimmed.
+    const copies = await page.locator("[data-wall] [data-id]").evaluateAll((items, ids) => items.filter((item) => ids.includes(item.dataset.id)).length, shown);
+    assert.equal(await page.locator("[data-wall] .is-match").count(), copies);
+    assert.equal(await page.locator("[data-wall] .is-dim").count(), await page.locator("[data-wall] [data-id]").count() - copies);
     // The first match is drawn large; the second sits where the second tile was.
     assert.equal(await cards(page).first().evaluate((item) => item.classList.contains("tile--lead")), true);
     await page.waitForFunction(() => document.querySelector("[data-video-list]").getAnimations({ subtree: true }).length === 0);
@@ -513,7 +549,242 @@ test("a search lights its stills on the wall and closes up the index", async (t)
     assert.equal(await page.locator("[data-wall] .is-match, [data-wall] .is-dim").count(), 0);
 });
 
-test("the wall drifts and Career Quest fades up once, under the page's content security policy", async (t) => {
+test("the video wall lights what a search matches, echoes included, and keeps the search in the address", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/wall/");
+    assert.equal(await page.getByRole("list", { name: "Every video" }).getByRole("link").count(), videos.length);
+    const input = page.getByRole("searchbox", { name: "Search videos" });
+    await input.fill("portfolio");
+    const expected = await page.locator("[data-wall-page] [data-search]").evaluateAll((items) => items
+        .filter((item) => item.dataset.search.split(" ").some((word) => word.startsWith("portfolio")))
+        .map((item) => item.dataset.id).sort());
+    assert.ok(expected.length > 0 && expected.length < videos.length);
+    const lit = await page.locator("[data-wall-page] .is-match").evaluateAll((items) => [...new Set(items.map((item) => item.dataset.id))].sort());
+    assert.deepEqual(lit, expected);
+    // Every copy of a match is lit, and every other still is dimmed.
+    const copies = await page.locator("[data-wall-page] [data-id]").evaluateAll((items, ids) => items.filter((item) => ids.includes(item.dataset.id)).length, expected);
+    const stills = await page.locator("[data-wall-page] [data-id]").count();
+    assert.ok(copies > expected.length);
+    assert.equal(await page.locator("[data-wall-page] .is-match").count(), copies);
+    assert.equal(await page.locator("[data-wall-page] .is-dim").count(), stills - copies);
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await page.locator("[data-wall-page] .is-match .wall__edge").first().elementHandle());
+    assert.equal(await page.locator("[data-results]").textContent(), `${expected.length} of ${videos.length} videos match “portfolio”`);
+    assert.equal(new URL(page.url()).searchParams.get("q"), "portfolio");
+    assert.equal(await page.title(), "“portfolio” | Video wall | CSE Videos");
+    // Only the matches are left for the keyboard and screen readers.
+    const list = page.getByRole("list", { name: "Every video" });
+    assert.equal(await list.getByRole("listitem").count(), expected.length);
+    await input.focus();
+    await page.keyboard.press("Tab");
+    assert.ok(expected.includes(await page.evaluate(() => document.activeElement.closest("[data-id]")?.dataset.id)));
+    // Enter goes to the first match.
+    await input.focus();
+    await input.press("Enter");
+    const first = await page.evaluate(() => document.activeElement.closest("[data-id]")?.dataset.id);
+    assert.ok(expected.includes(first));
+
+    await page.goto("/wall?q=portfolio");
+    assert.equal(new URL(page.url()).pathname, "/wall/");
+    assert.equal(await input.inputValue(), "portfolio");
+    assert.equal(await page.locator("[data-wall-page] .is-match").count(), copies);
+
+    await input.fill("");
+    assert.equal(await page.locator("[data-wall-page] .is-match, [data-wall-page] .is-dim").count(), 0);
+    assert.equal(await page.locator("[data-results]").textContent(), libraryLine(videos));
+    assert.equal(new URL(page.url()).search, "");
+    assert.equal(await list.getByRole("listitem").count(), videos.length);
+    assert.equal(await page.locator("[data-wall-page] [data-search] a[tabindex]").count(), 0);
+
+    await input.fill("zzzz");
+    assert.equal(await page.locator("[data-results]").textContent(), "No videos match “zzzz”");
+    assert.equal(await page.locator("[data-wall-page] .is-match").count(), 0);
+});
+
+test("on the video wall the search comes first, then a link for every video, captioned when focused", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/wall/");
+    const list = page.getByRole("list", { name: "Every video" });
+    assert.equal(await list.getByRole("listitem").count(), videos.length);
+    assert.equal(await page.locator("[data-wall-page] .wall__still--echo a").evaluateAll((links) => links.every((link) => link.tabIndex === -1)), true);
+
+    await page.getByRole("searchbox", { name: "Search videos" }).focus();
+    await page.keyboard.press("Tab");
+    const focused = page.locator(":focus");
+    assert.equal(await focused.evaluate((node) => node.matches("[data-wall-page] .wall__link")), true);
+    const id = await focused.evaluate((node) => node.closest("[data-id]").dataset.id);
+    const title = smartQuotes(videos.find((item) => item.id === id).title);
+    assert.equal(await list.getByRole("link", { name: title, exact: true }).count(), 1);
+    // The strip names the focused still.
+    const label = page.locator("[data-wall-caption]");
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await label.elementHandle());
+    assert.equal(await label.textContent(), title);
+
+    // The header's search button comes back to this page's field.
+    await page.locator("[data-search-button]").click();
+    assert.equal(await page.evaluate(() => document.activeElement.matches("[data-search-input]")), true);
+    assert.equal(new URL(page.url()).pathname, "/wall/");
+});
+
+const WALL_VIEWPORTS = [
+    { width: 2560, height: 1440 }, { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1440, height: 2560 },
+    { width: 1366, height: 657 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 1024, height: 700 },
+    { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 375, height: 667 }, { width: 360, height: 640 }, { width: 320, height: 568 }
+];
+
+for (const viewport of WALL_VIEWPORTS) {
+    test(`the video wall fills its stage and shows every video whole at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/wall/");
+        const result = await page.evaluate(() => {
+            const area = document.querySelector(".wall-stage__area").getBoundingClientRect();
+            const columns = new Map();
+            const cut = [];
+
+            for (const still of document.querySelectorAll("[data-wall-page] > li")) {
+                const box = still.getBoundingClientRect();
+                const key = Math.round(box.left);
+                const column = columns.get(key) ?? { top: Infinity, bottom: -Infinity };
+                columns.set(key, { top: Math.min(column.top, box.top), bottom: Math.max(column.bottom, box.bottom) });
+
+                if (!still.classList.contains("wall__still--echo") && (box.top < area.top - 1 || box.bottom > area.bottom + 1)) {
+                    cut.push(still.dataset.id);
+                }
+            }
+
+            return {
+                short: [...columns].filter(([, column]) => column.top > area.top + 1 || column.bottom < area.bottom - 1).map(([left]) => left),
+                cut
+            };
+        });
+        assert.deepEqual(result.short, [], "columns that stop short of the wall's edges");
+        assert.deepEqual(result.cut, [], "videos whose own still is cut off");
+    });
+}
+
+for (const { viewport, deviceScaleFactor = 1 } of [
+    { viewport: { width: 1440, height: 900 } }, { viewport: { width: 1024, height: 768 } }, { viewport: { width: 375, height: 667 } },
+    { viewport: { width: 667, height: 375 } }, { viewport: { width: 683, height: 384 }, deviceScaleFactor: 2 }, { viewport: { width: 640, height: 360 }, deviceScaleFactor: 2 }
+]) {
+    test(`on the video wall every focused still is whole on screen and clear of the strip at ${viewport.width}x${viewport.height}@${deviceScaleFactor}`, async (t) => {
+        const { page } = await site.page(t, { viewport, deviceScaleFactor });
+        await page.goto("/wall/");
+        const hidden = await page.evaluate(async () => {
+            const bad = [];
+
+            for (const link of document.querySelectorAll("[data-wall-page] [data-search] a")) {
+                link.focus();
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+                const box = link.getBoundingClientRect();
+                const middle = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+
+                if (box.top < -1 || box.bottom > innerHeight + 1 || !link.contains(middle)) {
+                    bad.push(link.closest("[data-id]").dataset.id);
+                }
+            }
+
+            return bad;
+        });
+        assert.deepEqual(hidden, []);
+    });
+}
+
+test("on a tall portrait screen the video wall ends with its strip, and the page goes on below", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 2560 } });
+    await page.goto("/wall/");
+    const [stage, strip] = await Promise.all([page.locator(".wall-stage").boundingBox(), page.locator(".band").boundingBox()]);
+    assert.ok(Math.abs(stage.y + stage.height - (strip.y + strip.height)) <= 1, JSON.stringify({ stage, strip }));
+});
+
+test("the video wall's focus ring shows over the still, and the strip keeps naming the focused still", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/wall/");
+    await page.getByRole("searchbox", { name: "Search videos" }).focus();
+    await page.keyboard.press("Tab");
+    const focused = page.locator(":focus");
+    assert.equal(await focused.evaluate((node) => getComputedStyle(node, "::after").opacity), "1");
+    const title = await focused.getAttribute("href").then((href) => smartQuotes(videos.find((item) => href.endsWith(`/${item.id}/`)).title));
+    const label = page.locator("[data-wall-caption]");
+    await page.locator("[data-wall-page] [data-search]").nth(20).hover();
+    await page.mouse.move(5, 5);
+    await page.waitForFunction(([node, text]) => node.textContent === text && getComputedStyle(node).opacity === "1", [await label.elementHandle(), title]);
+});
+
+test("the hero's search shows the short hint where it sits beside the card", async (t) => {
+    for (const [width, hint] of [[1440, "Try portfolio, interviews or internships"], [1000, "Try portfolio or interviews"], [900, "Try portfolio or interviews"], [760, "Try portfolio, interviews or internships"], [390, "Try portfolio or interviews"]]) {
+        const { page } = await site.page(t, { viewport: { width, height: 900 } });
+        await page.goto("/");
+        assert.equal(await page.getByRole("searchbox").getAttribute("placeholder"), hint, `${width}`);
+    }
+});
+
+test("a video opened from the video wall links back to it, and to its search", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto("/wall/");
+    await page.getByRole("list", { name: "Every video" }).getByRole("link").nth(17).click();
+    await page.waitForURL(/\/videos\/[\w-]+\/$/);
+    const back = page.locator("[data-back]");
+    assert.equal(await back.textContent(), "Back to the video wall");
+    await back.click();
+    await page.waitForURL("**/wall/");
+
+    await page.goto("/wall/?q=portfolio");
+    await page.locator("[data-wall-page] [data-search].is-match a").first().click();
+    await page.waitForURL(/\/videos\/[\w-]+\/$/);
+    assert.equal(await back.textContent(), "Back to results");
+    await back.click();
+    await page.waitForURL("**/wall/?q=portfolio");
+    assert.equal(await page.getByRole("searchbox", { name: "Search videos" }).inputValue(), "portfolio");
+});
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1100, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    test(`the hero's card is filled to every edge at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/");
+        const short = await page.evaluate(() => {
+            const card = document.querySelector(".hero__card").getBoundingClientRect();
+            const columns = new Map();
+
+            for (const still of document.querySelectorAll(".hero__card [data-id]")) {
+                const box = still.getBoundingClientRect();
+                const key = Math.round(box.left);
+                const column = columns.get(key) ?? { top: Infinity, bottom: -Infinity };
+                columns.set(key, { top: Math.min(column.top, box.top), bottom: Math.max(column.bottom, box.bottom) });
+            }
+
+            return [...columns].filter(([, column]) => column.top > card.top + 1 || column.bottom < card.bottom - 1).map(([left]) => left);
+        });
+        assert.deepEqual(short, []);
+    });
+}
+
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    test(`the All videos heading is on the first screen at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/");
+        await page.evaluate(() => document.fonts.ready);
+        const heading = await page.getByRole("heading", { name: "All videos", level: 2 }).boundingBox();
+        assert.ok(heading.y + heading.height <= viewport.height, JSON.stringify(heading));
+    });
+}
+
+for (const width of [320, 360, 375, 380, 400, 420, 430, 449, 450, 500, 700, 710, 720, 760, 1099, 1100]) {
+    test(`the header's links fit on the page at ${width} px`, async (t) => {
+        const { page } = await site.page(t, { viewport: { width, height: 800 } });
+        await page.goto("/wall/");
+        await page.evaluate(() => document.fonts.ready);
+        const fit = await page.evaluate(() => {
+            const inner = document.querySelector(".masthead__inner").getBoundingClientRect();
+            const links = [...document.querySelectorAll(".site-nav__link")].map((link) => link.getBoundingClientRect());
+            return {
+                scroll: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+                inside: links.every((box) => box.right <= inner.right + 1 && box.left >= inner.left - 1)
+            };
+        });
+        assert.deepEqual(fit, { scroll: true, inside: true });
+    });
+}
+
+test("the wall holds still as the page scrolls, and Career Quest fades up once, under the page's content security policy", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.addInitScript(() => {
         window.violations = [];
@@ -529,10 +800,11 @@ test("the wall drifts and Career Quest fades up once, under the page's content s
     const boards = page.locator("[data-quest-boards]");
     assert.equal(await boards.evaluate((node) => node.classList.contains("is-waiting")), true);
 
+    const before = await wall.evaluate((node) => node.getBoundingClientRect().top - document.querySelector(".hero__card").getBoundingClientRect().top);
     await page.mouse.wheel(0, 400);
-    await page.waitForFunction(() => document.querySelector("[data-wall]").style.transform !== "");
-    const y = await wall.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m42);
-    assert.ok(Math.abs(y - 0.08 * await page.evaluate(() => window.scrollY)) < 1, String(y));
+    await page.waitForFunction(() => window.scrollY > 0);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await wall.evaluate((node) => node.getBoundingClientRect().top - document.querySelector(".hero__card").getBoundingClientRect().top), before);
 
     await boards.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => !document.querySelector("[data-quest-boards]").classList.contains("is-waiting"));

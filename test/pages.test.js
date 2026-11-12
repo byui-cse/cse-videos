@@ -4,7 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
-import { homePage, notFoundPage, tagPage, tagsPage, videoPage } from "../lib/render.js";
+import { homePage, notFoundPage, tagPage, tagsPage, videoPage, videoWallPage } from "../lib/render.js";
+import { CARD_STILLS, WALL_LEAD, WALL_STILLS } from "../lib/wall.js";
 import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
@@ -68,9 +69,10 @@ after(async () => {
 });
 
 describe("build", () => {
-    it("writes a page for the home list, the tags, every tag, and every video", async () => {
+    it("writes a page for the home list, the video wall, the tags, every tag, and every video", async () => {
         const files = [
             "index.html",
+            "wall/index.html",
             "404.html",
             "tags/index.html",
             "tags/ai/index.html",
@@ -82,6 +84,7 @@ describe("build", () => {
             "css/main.css",
             "js/main.js",
             "js/search.js",
+            "js/wall.js",
             "data/videos.json"
         ];
 
@@ -91,7 +94,7 @@ describe("build", () => {
 
         assert.deepEqual(
             { videos: result.videos, tags: result.tags, pages: result.pages },
-            { videos: 3, tags: 3, pages: 9 }
+            { videos: 3, tags: 3, pages: 10 }
         );
     });
 
@@ -119,6 +122,11 @@ describe("build", () => {
         assert.throws(() => siteUrlFrom("ftp://example.com/"), /SITE_URL/);
     });
 
+    it("sizes the Video wall's stage from the number of videos in the stylesheet", async () => {
+        const css = await read("css/main.css");
+        assert.ok(css.trimEnd().endsWith(".wall-stage{--wall-rows-wide:2;--wall-full-wide:9;--wall-rows-mid:2;--wall-full-mid:14;--wall-rows-narrow:3;--wall-full-narrow:21}"));
+    });
+
     it("writes a sitemap for every public page, without lastmod dates", async () => {
         const xml = await read("sitemap.xml");
         const base = "https://byui-cse.github.io/cse-videos/";
@@ -126,6 +134,7 @@ describe("build", () => {
 
         assert.deepEqual(locations, [
             base,
+            `${base}wall/`,
             `${base}tags/`,
             `${base}tags/ai/`,
             `${base}tags/career-quest/`,
@@ -135,7 +144,7 @@ describe("build", () => {
             `${base}videos/lecture/`
         ]);
         assert.equal(xml.includes("<lastmod>"), false);
-        assert.equal(xml.match(/<url>/g)?.length, 8);
+        assert.equal(xml.match(/<url>/g)?.length, 9);
     });
 
     it("writes robots.txt with the sitemap address", async () => {
@@ -178,8 +187,18 @@ describe("home page", () => {
 
     it("hides the search form until JavaScript can run it", async () => {
         const page = await read("index.html");
-        assert.match(page, /<form class="search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
+        assert.match(page, /<form class="search hero__search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
         assert.match(page, /name="q"/);
+    });
+
+    it("puts the headline, the search and the counts beside a card holding the wall", async () => {
+        const page = await read("index.html");
+        const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
+        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>/);
+        assert.match(hero, /<ul class="hero__facts">\s*<li data-results>3 videos<\/li>\s*<li><a href="\.\/tags\/">3 topics<\/a><\/li>\s*<\/ul>/);
+        assert.match(hero, /<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
+        assert.match(hero, /<p class="hero__pointing" aria-hidden="true" data-wall-caption><\/p>/);
+        assert.match(hero, /<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"/);
     });
 
     it("links home with ./ so the site name and All videos link clear a search", async () => {
@@ -306,7 +325,7 @@ describe("series on other pages", () => {
         assert.ok(!section.includes("That is all"));
         assert.match(section, /<p class="quest__end"><a href="\.\/tags\/quest\/">Quest on its own page<\/a><\/p>/);
         assert.match(page, /<a class="site-nav__link" href="#quest">Quest<\/a>/);
-        assert.match(page, /<p class="band__count" data-results>5 videos, 2 minutes in all<\/p>/);
+        assert.match(page, /<li data-results>5 videos, 2 minutes in all<\/li>/);
     });
 
     it("introduce Career Quest in words, the parts counted from the data", () => {
@@ -373,17 +392,20 @@ describe("series on other pages", () => {
         assert.match(page, /<link rel="preload" as="image" type="image\/avif" imagesrcset="[^"]+" imagesizes="[^"]+" fetchpriority="high">/);
     });
 
-    it("put every video on the wall once, as a link, in a fixed shuffle", () => {
+    it("put every video on the card's wall once, then echoes to fill it, as links, in a fixed shuffle", () => {
         const page = homePage(site);
         const wall = page.slice(page.indexOf("data-wall"), page.indexOf("</ul>", page.indexOf("data-wall")));
-        const ids = [...wall.matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+        const own = [...wall.matchAll(/<li class="wall__still" data-id="[\w-]+"><a class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+        const all = [...wall.matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
 
-        assert.deepEqual([...ids].sort(), videos.map((video) => video.id).sort());
-        assert.deepEqual(ids, [...homePage(site).matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]));
+        assert.deepEqual([...own].sort(), videos.map((video) => video.id).sort());
+        assert.equal(all.length, CARD_STILLS);
+        assert.deepEqual(all.slice(0, videos.length), own);
+        assert.deepEqual(all, [...homePage(site).matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]));
         assert.match(wall, /<span class="wall__caption">Quest, Part 1: Step 1<\/span>/);
         // The index has every video for the keyboard; the wall is for the pointer.
-        assert.match(page, /<ul class="wall" aria-hidden="true" data-wall>/);
-        assert.equal(wall.match(/class="wall__link" href="[^"]+" tabindex="-1"/g).length, videos.length);
+        assert.match(page, /<ul class="wall wall--card" aria-hidden="true" data-wall>/);
+        assert.equal(wall.match(/class="wall__link" href="[^"]+" tabindex="-1"/g).length, CARD_STILLS);
         assert.ok(!page.includes("Skip past the wall"));
     });
 });
@@ -419,7 +441,7 @@ describe("every page", () => {
     });
 
     it("has no style attributes or style elements, so the policy's style-src 'self' holds", async () => {
-        for (const file of ["index.html", "tags/index.html", "tags/job-search/index.html", "videos/sample-short/index.html", "404.html"]) {
+        for (const file of ["index.html", "wall/index.html", "tags/index.html", "tags/job-search/index.html", "videos/sample-short/index.html", "404.html"]) {
             const page = await read(file);
             assert.doesNotMatch(page, /\sstyle=/, file);
             assert.doesNotMatch(page, /<style/, file);
@@ -579,6 +601,70 @@ describe("video pages", () => {
         assert.equal(trail.itemListElement[0].item, "https://byui-cse.github.io/cse-videos/");
         assert.equal(trail.itemListElement[1].item, video.url);
         assert.match(page, /<meta name="twitter:card" content="summary">/);
+    });
+});
+
+describe("video wall page", () => {
+    it("names every video once as a link the keyboard reaches, and hides the echoes that fill the screen", async () => {
+        const page = await read("wall/index.html");
+        const start = page.indexOf("data-wall-page");
+        const wall = page.slice(start, page.indexOf("</ul>", start));
+        const stills = [...wall.matchAll(/<li class="wall__still( wall__still--echo)?" data-id="([\w-]+)"([^>]*)><a class="wall__link" href="\.\.\/videos\/([\w-]+)\/"( tabindex="-1")? data-reel-link>/g)];
+        const real = stills.filter((match) => !match[1]);
+        const echoes = stills.filter((match) => match[1]);
+
+        assert.match(page, /<ul class="wall wall--page" aria-label="Every video" data-wall data-wall-page>/);
+        assert.equal(stills.length, WALL_STILLS);
+        // The top row is lifted past the stage's edge, so it holds echoes.
+        assert.ok(stills.slice(0, WALL_LEAD).every((match) => match[1]));
+        assert.ok(stills.slice(WALL_LEAD, WALL_LEAD + VIDEOS.length).every((match) => !match[1]));
+        assert.deepEqual(real.map((match) => match[2]).sort(), VIDEOS.map((video) => video.id).sort());
+
+        for (const match of real) {
+            assert.equal(match[2], match[4]);
+            assert.match(match[3], /^ data-search="[^"]+"$/);
+            assert.equal(match[5], undefined);
+        }
+
+        for (const match of echoes) {
+            assert.equal(match[3], ' aria-hidden="true"');
+            assert.equal(match[5], ' tabindex="-1"');
+        }
+
+        assert.match(wall, /<span class="wall__caption">An &lt;older&gt; reel<\/span>/);
+    });
+
+    it("puts its name, the search and the count first, and underlines Video wall in the header", async () => {
+        const page = await read("wall/index.html");
+        assert.ok(page.indexOf('id="page-title"') < page.indexOf("data-wall-page"));
+        assert.match(page, /<h1 class="band__title" id="page-title">Video wall<\/h1>\s*<p class="band__pointing" aria-hidden="true" data-wall-caption><\/p>/);
+        assert.match(page, /<form class="search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
+        assert.match(page, /<p class="band__count" data-results>3 videos<\/p>/);
+        assert.match(page, /<p class="visually-hidden" data-announce role="status"><\/p>/);
+        assert.match(page, /<a class="site-nav__link" href="\.\.\/wall\/" aria-current="page"><span class="site-nav__wide">Video wall<\/span><span class="site-nav__narrow">Wall<\/span><\/a>/);
+        assert.match(page, /<title>Video wall \| CSE Videos<\/title>/);
+        assert.match(page, /<link rel="canonical" href="https:\/\/byui-cse\.github\.io\/cse-videos\/wall\/">/);
+    });
+
+    it("is linked from the header and footer of every page", async () => {
+        for (const [file, root] of [["index.html", "./"], ["tags/index.html", "../"], ["tags/ai/index.html", "../../"], ["videos/lecture/index.html", "../../"]]) {
+            const page = await read(file);
+            const href = `${root}wall/`.replaceAll(".", "\\.").replaceAll("/", "\\/");
+            assert.match(page, new RegExp(`<a class="site-nav__link" href="${href}"><span class="site-nav__wide">Video wall<\\/span>`), file);
+            assert.match(page, new RegExp(`<li><a href="${href}">Video wall<\\/a><\\/li>`), file);
+        }
+    });
+
+    it("fills a small library's wall with echoes, and draws an empty library without any", () => {
+        const one = { id: "solo", title: "Solo", instagram: "https://www.instagram.com/reel/SOLO/", datePosted: "2026-11-01", tags: ["x"] };
+        const site = { videos: [one], tags: [], names: {}, covers: new Map(), siteUrl: null };
+        const page = videoWallPage(site);
+        assert.equal(page.match(/<li class="wall__still/g).length, WALL_STILLS);
+        assert.equal(page.match(/wall__still--echo/g).length, WALL_STILLS - 1);
+
+        const empty = videoWallPage({ ...site, videos: [] });
+        assert.equal(empty.match(/<li class="wall__still/g), null);
+        assert.match(empty, /<p class="band__count" data-results>0 videos<\/p>/);
     });
 });
 

@@ -1,8 +1,9 @@
 /**
- * CSE Videos stylesheet: the wall design. BYU-Idaho blue utility bar over a
- * white masthead, a wall of reel stills under a slim navy strip, square
- * stills, 4 px corners on controls, Sofia Sans and Sofia Sans Semi Condensed.
- * The CS & SE colors; nothing else of that site.
+ * CSE Videos stylesheet. BYU-Idaho blue utility bar over a white masthead, a
+ * home hero in the CS & SE site's manner (blue gradient, faint grid, the wall
+ * shrunk into a framed card), a Video wall page of small stills under a navy
+ * strip, square stills, 4 px corners on controls, Sofia Sans and Sofia Sans
+ * Semi Condensed. The CS & SE colors and hero; not its fonts or layout.
  * Layers: tokens → base → layout → components → utilities.
  */
 @layer tokens, base, layout, components, utilities;
@@ -21,6 +22,8 @@
 
 @import "./components/buttons.css" layer(components);
 @import "./components/source-preference.css" layer(components);
+@import "./components/search.css" layer(components);
+@import "./components/hero.css" layer(components);
 @import "./components/wall.css" layer(components);
 @import "./components/index.css" layer(components);
 @import "./components/topics.css" layer(components);

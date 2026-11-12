@@ -1,16 +1,40 @@
 /**
  * Space and timing: a 1344 px container with fluid gutters, the header's
- * height for the wall below it, and one easing for every state change.
+ * height and the Video wall strip's for sizing the wall between them, and one
+ * easing for every state change.
  */
 :root {
 	--gutter: clamp(20px, 12px + 2.5vw, 48px);
 	--container: 1344px;
 	--chrome: 124px;
+	/* The Video wall's docked strip: about 133 px at 1100 px and wider. */
+	--strip: 136px;
 	--state: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Under 1100 px the strip stacks; touch screens leave out its line that
+   names the still under the pointer. */
+@media (max-width: 1099px) {
+	:root {
+		--strip: 198px;
+	}
+}
+
+@media (max-width: 1099px) and (hover: none) {
+	:root {
+		--strip: 172px;
+	}
 }
 
 @media (max-width: 699px) {
 	:root {
 		--chrome: 100px;
+		--strip: 176px;
+	}
+}
+
+@media (max-width: 699px) and (hover: none) {
+	:root {
+		--strip: 150px;
 	}
 }

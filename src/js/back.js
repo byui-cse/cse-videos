@@ -1,6 +1,7 @@
 /**
- * Return to the list page that led to this video. A plain click goes back in
- * the history, so the list keeps its place; anything else follows the link.
+ * Return to the list page that led to this video (the home page, the Video
+ * wall, or a tag page). A plain click goes back in the history, so the list
+ * keeps its place; anything else follows the link.
  */
 import { backTarget, isPlainClick } from "./state.js";
 
@@ -21,6 +22,8 @@ export const initBack = () => {
 
     if (target.kind === "results") {
         link.textContent = "Back to results";
+    } else if (target.kind === "wall") {
+        link.textContent = "Back to the video wall";
     } else if (target.kind === "tag") {
         const tagPage = new URL(target.href);
         const tagLink = [...document.querySelectorAll("a[href]")]
