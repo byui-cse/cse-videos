@@ -279,8 +279,8 @@ test("a Cmd or Ctrl+click on the back link opens it in a new tab and leaves this
     const opened = context.waitForEvent("page", { timeout: 5000 });
     await page.locator("[data-back]").click({ modifiers: ["ControlOrMeta"] });
     const tab = await opened;
-    await tab.waitForLoadState();
-    assert.equal(tab.url(), results);
+    // The new tab starts on about:blank; wait for it to reach the results.
+    await tab.waitForURL(results);
     assert.equal(page.url(), here);
     assert.equal(await page.evaluate(() => history.length), length);
 });
@@ -303,27 +303,37 @@ test("a video opened in a new tab from the results links back to them", async (t
     assert.equal(await tab.getByRole("searchbox").inputValue(), "portfolio");
 });
 
-test("a blocked Instagram player says so above the frame, with a link to the reel", async (t) => {
-    const { page } = await site.page(t);
-    await page.clock.install();
-    await page.goto(videoPath);
-    const status = page.locator("[data-player-status]");
-    const frame = page.getByTitle(`${shownTitle} (Instagram)`, { exact: true });
-    assert.equal(await status.count(), 0);
+// Above the frame on a phone; from 700 px under the head's buttons, beside it.
+for (const { viewport, place, isMobile = false } of [
+    { viewport: { width: 1280, height: 800 }, place: "beside" },
+    { viewport: { width: 390, height: 844 }, place: "above", isMobile: true }
+]) {
+    test(`a blocked Instagram player says so with the controls, ${place} the frame at ${viewport.width}x${viewport.height}, with a link to the reel`, async (t) => {
+        const { page } = await site.page(t, { viewport, isMobile, hasTouch: isMobile });
+        await page.clock.install();
+        await page.goto(videoPath);
+        const status = page.locator("[data-player-status]");
+        const frame = page.getByTitle(`${shownTitle} (Instagram)`, { exact: true });
+        assert.equal(await status.count(), 0);
 
-    // Instagram is blocked in these tests, so no message comes within 10 seconds.
-    await page.clock.fastForward(10_500);
-    await status.waitFor({ state: "visible" });
-    assert.match(await status.textContent(), /may be blocked/);
-    assert.equal(await status.evaluate((node) =>
-        Boolean(node.compareDocumentPosition(document.querySelector("[data-player] iframe")) & Node.DOCUMENT_POSITION_FOLLOWING)), true);
-    const [statusBox, frameBox] = [await status.boundingBox(), await frame.boundingBox()];
-    assert.ok(statusBox.y + statusBox.height <= frameBox.y, "the message sits above the video");
-    assert.ok(statusBox.y + statusBox.height <= page.viewportSize().height, "the message is on the first screen");
-    const link = new URL(await status.getByRole("link", { name: "Watch on Instagram" }).getAttribute("href"));
-    assert.equal(link.href, `https://www.instagram.com/p/${instagramCode(video.instagram)}/`);
-    assert.equal(await frame.count(), 1);
-});
+        // Instagram is blocked in these tests, so no message comes within 10 seconds.
+        await page.clock.fastForward(10_500);
+        await status.waitFor({ state: "visible" });
+        assert.match(await status.textContent(), /may be blocked/);
+        assert.equal(await status.evaluate((node) => node.closest(".player__bar") !== null
+            && Boolean(node.compareDocumentPosition(document.querySelector("[data-player] iframe")) & Node.DOCUMENT_POSITION_FOLLOWING)), true);
+        const [statusBox, frameBox] = [await status.boundingBox(), await frame.boundingBox()];
+        if (place === "above") {
+            assert.ok(statusBox.y + statusBox.height <= frameBox.y, "the message sits above the video");
+        } else {
+            assert.ok(statusBox.x >= frameBox.x + frameBox.width, "the message sits beside the video");
+        }
+        assert.ok(statusBox.y + statusBox.height <= viewport.height, "the message is on the first screen");
+        const link = new URL(await status.getByRole("link", { name: "Watch on Instagram" }).getAttribute("href"));
+        assert.equal(link.href, `https://www.instagram.com/p/${instagramCode(video.instagram)}/`);
+        assert.equal(await frame.count(), 1);
+    });
+}
 
 test("Instagram messages sent before the page's script runs still reach the player", async (t) => {
     const { page, context } = await site.page(t);
@@ -1212,9 +1222,9 @@ describe("player preference", () => {
         assert.equal(await playing(page), "instagram");
         assert.equal(await note(page).textContent(), "Only on Instagram");
         assert.equal(await note(page).isVisible(), true);
-        assert.equal(await note(page).evaluate((node) => node.closest("[data-player]") !== null), true);
+        assert.equal(await note(page).evaluate((node) => node.closest(".player__bar") !== null), true);
         const [noteBox, frameBox] = [await note(page).boundingBox(), await page.locator("[data-player] iframe").boundingBox()];
-        assert.ok(noteBox.y + noteBox.height <= frameBox.y, "the note sits with the controls above the video");
+        assert.ok(noteBox.y + noteBox.height <= frameBox.y || noteBox.x >= frameBox.x + frameBox.width, "the note sits with the controls, clear of the video");
 
         await playOn(page, "Instagram").click();
         assert.equal(await note(page).isVisible(), false);

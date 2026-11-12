@@ -2,8 +2,9 @@
  * The record, in the player band under the head: the caption as posted, the
  * series steps, then the docket of facts (topics, credits, the link to
  * send) on hairlines. Beside a tall player the caption follows the head and
- * the docket settles at the foot of the column, so the title meets the top
- * of the frame and the docket its foot; on a phone it all follows the video.
+ * the docket settles at the foot of the column, so the back link meets the
+ * top of the frame and the docket its foot; on a phone it all follows the
+ * video.
  */
 .record {
 	grid-area: record;
@@ -85,8 +86,10 @@
 	list-style: none;
 }
 
-/* A narrow column puts each fact under its label. */
-@container (max-width: 26rem) {
+/* A narrow column puts each fact under its label, so the address to send
+   gets the whole line, and even the longest folder names fit whole on a
+   480 px phone. */
+@container (max-width: 30rem) {
 	.docket {
 		grid-template-columns: minmax(0, 1fr);
 	}

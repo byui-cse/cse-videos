@@ -111,8 +111,8 @@ export const initPlayer = () => {
             link.href = postUrl.href;
             link.textContent = "Watch on Instagram";
             status.append(link);
-            // On its own line in the bar, above the frame, so the message is
-            // between the controls and the video and on the first screen.
+            // On its own line in the bar, with the controls: above the frame
+            // on a phone, beside it from 700 px, on the first screen either way.
             bar.append(status);
         }
 
@@ -167,9 +167,9 @@ export const initPlayer = () => {
     };
 
     /**
-     * "Only on Instagram" above the video when the viewer prefers the player
-     * this video doesn't have, said to screen readers too, so they know why
-     * it wasn't used.
+     * "Only on Instagram" with the player's controls when the viewer prefers
+     * the player this video doesn't have, said to screen readers too, so they
+     * know why it wasn't used.
      * @param {string | null} preferred
      */
     const updateNote = (preferred) => {
@@ -316,7 +316,13 @@ export const initPlayer = () => {
             restore = null;
         }
 
-        expandButton.focus();
+        // Back to Expand, or to the video when the window has narrowed to a
+        // phone's while the player was open and Expand is no longer shown.
+        if (expanded || expandButton.getClientRects().length > 0) {
+            expandButton.focus();
+        } else {
+            iframe.focus();
+        }
     };
 
     const isExpanded = () => player.classList.contains("is-expanded");
