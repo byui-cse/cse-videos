@@ -68,7 +68,8 @@ const STOP_WORDS = new Set(["video", "videos", "reel", "reels", "the", "a", "an"
 
 /**
  * True when every useful query word matches a video word, allowing light
- * stems on either side. Filler words are kept when nothing else was typed.
+ * stems on either side. Filler words and lone letters are dropped when
+ * something else was typed; lone digits stay, so "part 3" finds Part 3.
  * An empty search matches everything.
  * @param {string[]} videoWords
  * @param {string} query
@@ -76,11 +77,10 @@ const STOP_WORDS = new Set(["video", "videos", "reel", "reels", "the", "a", "an"
  */
 export const matches = (videoWords, query) => {
     const typed = words(query);
-    const useful = typed.filter((term) => term.length > 1 && !STOP_WORDS.has(term));
+    const useful = typed.filter((term) => !/^\p{L}$/u.test(term) && !STOP_WORDS.has(term));
+    // The video's words and their stems, worked out once for every term.
+    const forms = videoWords.flatMap((word) => [word, ...stems(word)]);
 
-    return (useful.length ? useful : typed).every((term) => {
-        const candidates = [term, ...stems(term)];
-        return videoWords.some((word) => candidates.some((candidate) =>
-            word.startsWith(candidate) || stems(word).some((stem) => stem.startsWith(candidate))));
-    });
+    return (useful.length ? useful : typed).every((term) =>
+        [term, ...stems(term)].some((candidate) => forms.some((form) => form.startsWith(candidate))));
 };

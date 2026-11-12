@@ -130,6 +130,12 @@ describe("search", () => {
         assert.equal(matches(words("games"), "a"), false);
     });
 
+    it("keeps lone digits, so a part number narrows the search", () => {
+        assert.equal(matches(words("Career Quest, Part 3: Nobody gets through alone"), "quest part 3"), true);
+        assert.equal(matches(words("Career Quest, Part 4: Your resume is your shield"), "quest part 3"), false);
+        assert.equal(matches(words("Career Quest, Part 4: Your resume is your shield"), "a quest"), true);
+    });
+
     it("joins dotted acronyms before matching", () => {
         assert.deepEqual(words("A.I. and U.S."), ["ai", "and", "us"]);
         assert.equal(matches(words("ai tools"), "a.i."), true);

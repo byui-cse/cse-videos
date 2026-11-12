@@ -61,12 +61,21 @@ const initReveal = () => {
  */
 const initBoardFocus = () => {
     const boards = document.querySelector("[data-quest-boards]");
+    // Safari before 15.4 can't match :focus-visible and throws; there every
+    // focus counts.
+    const byKeyboard = (target) => {
+        try {
+            return target.matches(":focus-visible");
+        } catch {
+            return true;
+        }
+    };
 
     boards?.addEventListener("focusin", (event) => {
         const target = /** @type {Element} */ (event.target);
         const board = target.closest(".board");
 
-        if (!board || boards.scrollWidth <= boards.clientWidth || !target.matches(":focus-visible")) {
+        if (!board || boards.scrollWidth <= boards.clientWidth || !byKeyboard(target)) {
             return;
         }
 

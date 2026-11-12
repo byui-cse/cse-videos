@@ -542,6 +542,12 @@ test("on a phone the index opens on thirteen videos, and a search still looks th
     await input.fill("");
     assert.equal(await cards(page).count(), 13);
 
+    // Oldest first has no lead tile, so it folds at twelve: six full rows of two.
+    await page.locator("[data-sort]").selectOption("oldest");
+    assert.equal(await cards(page).count(), 12);
+    await page.locator("[data-sort]").selectOption("newest");
+    assert.equal(await cards(page).count(), 13);
+
     for (const javaScriptEnabled of [false]) {
         const { page: plain } = await site.page(t, { viewport, javaScriptEnabled });
         await plain.goto("/");

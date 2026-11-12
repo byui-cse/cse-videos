@@ -85,6 +85,7 @@ export const initList = () => {
     let shownOrder = defaultOrder;
     // How many videos a phone shows before "Show all"; 0 shows them all.
     const foldAt = Number(list.dataset.phoneFold) || 0;
+    let foldIndex = foldAt;
     const showAllRow = document.querySelector("[data-show-all-row]");
     const showAll = document.querySelector("[data-show-all]");
     let unfolded = false;
@@ -158,6 +159,10 @@ export const initList = () => {
         // A list without the menu, like a series, keeps its own order.
         const order = sort ? (sort.value === "oldest" ? "oldest" : "newest") : defaultOrder;
         const folded = foldAt > 0 && !unfolded && query === "";
+        // The fold counts the lead tile, two rows high, as one video. The
+        // other order has no lead tile, so it folds one sooner and still ends
+        // on a full row.
+        foldIndex = order === defaultOrder ? foldAt : Math.max(0, foldAt - 1);
         let shown = 0;
 
         const change = () => {
@@ -178,7 +183,7 @@ export const initList = () => {
             // Past the fold the rest wait for "Show all" (CSS hides them on
             // phones only).
             [...list.children].forEach((card, index) => {
-                card.classList.toggle("tile--folded", folded && index >= foldAt);
+                card.classList.toggle("tile--folded", folded && index >= foldIndex);
             });
 
             if (showAllRow) {
@@ -256,7 +261,7 @@ export const initList = () => {
         unfolded = true;
         update({ announce: "never" });
         // Keyboard and screen reader users carry on from the first video that appeared.
-        list.children[foldAt]?.querySelector("a")?.focus();
+        list.children[foldIndex]?.querySelector("a")?.focus();
     });
 
     // A narrow field gets the shorter hint, so it isn't cut off mid-word: a
