@@ -153,6 +153,32 @@ for (const width of [320, 390]) {
     });
 }
 
+// The header is the phone's 64 px masthead on phones and on screens 500 px
+// tall or less, under a utility bar that is 44 px on a touch screen; the
+// Video wall sizes itself to the screen under it from --chrome.
+for (const { viewport, touch, chrome } of [
+    { viewport: { width: 1440, height: 900 }, touch: false, chrome: 124 },
+    { viewport: { width: 1024, height: 768 }, touch: true, chrome: 132 },
+    { viewport: { width: 1440, height: 450 }, touch: false, chrome: 100 },
+    { viewport: { width: 720, height: 450 }, touch: false, chrome: 100 },
+    { viewport: { width: 844, height: 390 }, touch: true, chrome: 108 },
+    { viewport: { width: 740, height: 360 }, touch: true, chrome: 108 },
+    { viewport: { width: 390, height: 844 }, touch: true, chrome: 108 },
+    { viewport: { width: 359, height: 640 }, touch: false, chrome: 100 },
+    { viewport: { width: 320, height: 640 }, touch: true, chrome: 108 }
+]) {
+    test(`the header is ${chrome} px, as --chrome says, at ${viewport.width}x${viewport.height}${touch ? " on a touch screen" : ""}`, async (t) => {
+        const { page } = await site.page(t, { viewport, ...(touch && { hasTouch: true, isMobile: viewport.width < 1000 }) });
+        await page.goto("/wall/");
+        await page.evaluate(() => document.fonts.ready);
+        const header = await page.evaluate(() => ({
+            height: document.querySelector(".site-header").getBoundingClientRect().height,
+            token: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--chrome"))
+        }));
+        assert.deepEqual(header, { height: chrome, token: chrome });
+    });
+}
+
 test("the utility bar's focus ring is drawn inside the bar", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
@@ -175,24 +201,22 @@ test("the utility bar's focus ring is drawn inside the bar", async (t) => {
     }
 });
 
-for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
-    test(`the footer's columns line up and its wordmark stays under the page title at ${viewport.width}x${viewport.height}`, async (t) => {
+for (const viewport of [
+    { width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 800, height: 800 }, { width: 760, height: 800 }, { width: 720, height: 800 }, { width: 700, height: 800 },
+    { width: 844, height: 390 }, { width: 740, height: 360 }, { width: 390, height: 844 }, { width: 360, height: 640 }, { width: 320, height: 568 }
+]) {
+    test(`the footer's columns line up and its wordmark stays under every page's title at ${viewport.width}x${viewport.height}`, async (t) => {
         const { page } = await site.page(t, { viewport });
-        for (const route of ["/", "/tags/", `/tags/${multiTag}/`, `/videos/${videos[0].id}/`, "/missing/"]) {
+        for (const route of ["/", "/wall/", "/tags/", `/tags/${multiTag}/`, `/videos/${videos[0].id}/`, "/missing/"]) {
             await page.goto(route);
             await page.evaluate(() => document.fonts.ready);
             const footer = await page.evaluate(() => {
                 const size = (node) => parseFloat(getComputedStyle(node).fontSize);
                 const mark = document.querySelector(".site-footer__mark");
-                // The page title size every page head is set at.
-                const probe = document.createElement("h1");
-                probe.style.fontSize = "var(--h1)";
-                document.body.append(probe);
-                const pageTitle = size(probe);
-                probe.remove();
                 const heads = [...document.querySelectorAll(".site-footer__head")].map((head) => head.getBoundingClientRect());
+                const lists = [...document.querySelectorAll(".site-footer__links")]
+                    .map((list) => [...list.querySelectorAll("a")].map((link) => Math.round(link.getBoundingClientRect().top)));
                 return {
-                    pageTitle,
                     mark: size(mark),
                     markLines: (() => {
                         const range = document.createRange();
@@ -202,18 +226,21 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768
                     h1: size(document.querySelector("h1")),
                     headLines: [...document.querySelectorAll(".site-footer__head")].map((head) => Math.round(head.getBoundingClientRect().height / parseFloat(getComputedStyle(head).lineHeight))),
                     sameRow: heads.length === 2 && heads[0].top === heads[1].top,
+                    // Row for row: the nth link of each list on one line.
+                    rows: lists[1].every((top, index) => index >= lists[0].length || top === lists[0][index]),
+                    // Every link a 44 px target and one line, with any pointer.
+                    links: [...document.querySelectorAll(".site-footer a")].every((link) => link.getBoundingClientRect().height === 44),
                     wide: document.documentElement.scrollWidth <= innerWidth
                 };
             });
-            assert.ok(footer.mark < footer.pageTitle, `${route} ${JSON.stringify(footer)}`);
-            if (route.startsWith("/videos/") || route.startsWith("/tags/") || route === "/") {
-                assert.ok(footer.mark < footer.h1, `${route} ${JSON.stringify(footer)}`);
-            }
+            assert.ok(footer.mark < footer.h1, `${route} ${JSON.stringify(footer)}`);
             assert.equal(footer.markLines, 1, route);
             assert.deepEqual(footer.headLines, [1, 1], route);
+            assert.equal(footer.links, true, `${route} ${JSON.stringify(footer)}`);
             assert.equal(footer.wide, true, route);
             if (viewport.width >= 360) {
                 assert.equal(footer.sameRow, true, route);
+                assert.equal(footer.rows, true, `${route} ${JSON.stringify(footer)}`);
             }
         }
     });

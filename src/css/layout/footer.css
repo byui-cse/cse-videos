@@ -1,13 +1,16 @@
 /**
  * The footer: a BYU-I blue band with the wordmark and the department's name
  * on the left and two link columns on the right, over an ink band with the
- * university's privacy and legal links. The band is cut on the index's
- * 24 px gutters: the wordmark takes the left half, over the index's first
- * three tiles, and each link column a quarter, the first starting where the
- * fourth tile does. The wordmark stays a step under every page's title.
+ * university's privacy and legal links. From 800 px the band is cut on the
+ * index's 24 px gutters: the wordmark takes the left half and each link
+ * column a quarter, the first starting on the page's middle line, where the
+ * index's middle tile does. Narrower, the columns go under the wordmark, a
+ * half each. The wordmark signs off at nine tenths of the Video wall's
+ * title, the smallest page title, so it stays under every page's h1. Every
+ * link is a 44 px target; the band's padding allows for the air they carry.
  */
 .site-footer__band {
-	padding: 64px 0 56px;
+	padding: 56px 0 44px;
 	background: var(--blue);
 	color: #fff;
 }
@@ -21,7 +24,7 @@
 
 .site-footer__mark {
 	font-family: var(--display);
-	font-size: min(var(--step-4), var(--h1) * 0.8);
+	font-size: calc(var(--strip-title) * 0.9);
 	font-weight: 800;
 	line-height: 1;
 	letter-spacing: -0.02em;
@@ -69,7 +72,7 @@
 .site-footer__links a {
 	display: inline-flex;
 	align-items: center;
-	min-height: 36px;
+	min-height: 44px;
 	color: #fff;
 	text-decoration: none;
 }
@@ -84,7 +87,7 @@
 }
 
 .site-footer__legal {
-	padding: 16px 0;
+	padding: 12px 0;
 	background: var(--legal);
 	color: var(--legal-text);
 }
@@ -94,7 +97,7 @@
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 4px 32px;
+	gap: 0 32px;
 }
 
 .site-footer__legal-links {
@@ -106,7 +109,7 @@
 .site-footer__legal-links a {
 	display: inline-flex;
 	align-items: center;
-	min-height: 36px;
+	min-height: 44px;
 	color: #fff;
 }
 
@@ -122,21 +125,31 @@
 	}
 }
 
-@media (pointer: coarse) {
-	.site-footer__links a,
-	.site-footer__legal-links a {
-		min-height: 44px;
+/* Under 800 px a quarter is too narrow for "Instagram, @byui.cse" on one
+   line, so the columns go under the wordmark and the lists still line up
+   row for row. */
+@media (max-width: 799px) {
+	.site-footer__inner {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 32px;
 	}
 }
 
+/* On a phone the wordmark is the masthead's, a step under the Video wall's
+   21 px title (src/css/components/wall.css). */
 @media (max-width: 699px) {
 	.site-footer__band {
 		padding: 48px 0 40px;
 	}
 
-	.site-footer__inner {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 32px;
+	.site-footer__mark {
+		font-size: 20px;
+	}
+
+	/* The department's name steps down too, so the wordmark still leads. */
+	.site-footer__department {
+		margin-top: 4px;
+		font-size: 16px;
 	}
 
 	.site-footer__columns {

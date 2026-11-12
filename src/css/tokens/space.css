@@ -6,10 +6,32 @@
 :root {
 	--gutter: clamp(20px, 12px + 2.5vw, 48px);
 	--container: 1344px;
+	/* The header: the 36 px utility bar over the 88 px masthead
+	   (src/css/layout/header.css). */
 	--chrome: 124px;
 	/* The Video wall's docked strip: about 133 px at 1100 px and wider. */
 	--strip: 136px;
 	--state: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* A touch screen's utility bar is 44 px, for its links. */
+@media (pointer: coarse) {
+	:root {
+		--chrome: 132px;
+	}
+}
+
+/* Phones, and screens 500 px tall or less, have the 64 px masthead. */
+@media (max-width: 699px), (max-height: 500px) {
+	:root {
+		--chrome: 100px;
+	}
+}
+
+@media (pointer: coarse) and (max-width: 699px), (pointer: coarse) and (max-height: 500px) {
+	:root {
+		--chrome: 108px;
+	}
 }
 
 /* Under 1100 px the strip's heading and count share a line over the field:
@@ -25,7 +47,6 @@
    phone width. */
 @media (max-width: 699px) {
 	:root {
-		--chrome: 100px;
 		--strip: 120px;
 	}
 }

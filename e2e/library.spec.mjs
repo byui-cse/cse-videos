@@ -995,8 +995,10 @@ for (const viewport of [
     { width: 799, height: 900 }, { width: 768, height: 1024 }, { width: 760, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 },
     { width: 375, height: 667 }, { width: 360, height: 740 }, { width: 360, height: 640 }, { width: 320, height: 640 }
 ]) {
-    test(`the All videos heading is on the first screen at ${viewport.width}x${viewport.height}`, async (t) => {
-        const { page } = await site.page(t, { viewport });
+    // A phone is a touch screen, whose utility bar is 44 px for its links.
+    const phone = viewport.width < 700;
+    test(`the All videos heading is on the first screen at ${viewport.width}x${viewport.height}${phone ? " on a touch screen" : ""}`, async (t) => {
+        const { page } = await site.page(t, { viewport, ...(phone && { isMobile: true, hasTouch: true }) });
         await page.goto("/");
         await page.evaluate(() => document.fonts.ready);
         const heading = await page.getByRole("heading", { name: "All videos", level: 2 }).boundingBox();
@@ -1004,22 +1006,24 @@ for (const viewport of [
     });
 }
 
-for (const width of [320, 360, 375, 380, 400, 420, 430, 449, 450, 500, 700, 710, 720, 760, 1099, 1100]) {
-    test(`the header's links fit on the page at ${width} px`, async (t) => {
+for (const width of [320, 340, 359, 360, 375, 380, 400, 420, 430, 449, 450, 500, 699, 700, 710, 720, 760, 1099, 1100]) {
+    test(`the header's links fit on the page in one row, in their keyboard order, at ${width} px`, async (t) => {
         const { page } = await site.page(t, { viewport: { width, height: 800 } });
         await page.goto("/wall/");
         await page.evaluate(() => document.fonts.ready);
         const fit = await page.evaluate(() => {
             const inner = document.querySelector(".masthead__inner").getBoundingClientRect();
-            const links = [...document.querySelectorAll(".site-nav__link, .search-button")]
+            const links = [...document.querySelectorAll(".wordmark, .site-nav__link, .search-button")]
                 .filter((link) => link.getClientRects().length > 0)
                 .map((link) => link.getBoundingClientRect());
             return {
                 scroll: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-                inside: links.every((box) => box.right <= inner.right + 1 && box.left >= inner.left - 1)
+                inside: links.every((box) => box.right <= inner.right + 1 && box.left >= inner.left - 1),
+                rows: new Set(links.map((box) => Math.round(box.top + box.height / 2))).size,
+                inOrder: links.every((box, index) => index === 0 || box.left >= links[index - 1].right)
             };
         });
-        assert.deepEqual(fit, { scroll: true, inside: true });
+        assert.deepEqual(fit, { scroll: true, inside: true, rows: 1, inOrder: true });
     });
 }
 
