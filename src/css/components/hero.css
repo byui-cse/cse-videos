@@ -1,10 +1,17 @@
 /**
  * The home page's hero, in the CS & SE site's manner: a blue gradient under
- * a faint grid, the headline (its second line gold) and the search on the
- * left, and on the right a framed card holding the wall, shrunk. On a laptop
- * or tablet in landscape it ends about three quarters of the way down the
- * first screen or sooner, so the index starts on it. Pointing at a still in
- * the card names it in a label at the card's corner.
+ * a faint grid, the headline (its second line gold), one line on what the
+ * search covers, the search and the facts on the left, and on the right a
+ * framed card holding the wall, shrunk, with the way to the Video wall under
+ * it. The copy and the card share their edges: the card's top meets the
+ * headline's capitals, its foot the search field's, and the line under it
+ * (a still's name, the way to the Video wall) sits on the facts' baseline.
+ * The headline's first line sets the copy's measure, so the lede and the
+ * search end with it. Its air grows with the screen's height, so on a laptop
+ * or a tablet the hero ends by four fifths of the way down the first screen
+ * and the index starts on it. Pointing at a still in the card lights it,
+ * dims the rest and names it under the card. Where the hero stacks, the card
+ * is one row of whole stills.
  */
 .hero {
 	position: relative;
@@ -29,23 +36,43 @@
 	outline-color: var(--focus-on-band);
 }
 
+/* The headline's size, capped by the screen's height on a short laptop, and
+   the width of its first line ("Find the right video" is 7.54 of it). The
+   copy's column is as wide as that line, and the card takes the rest. Air:
+   112 px above on a 1080 px screen, 100 at 900, 73 at 800, 52 at 720, never
+   under 52, and about as much under the facts' words. The lede's size, the
+   room it takes with its margin, and the field's height are kept here too,
+   for the card's height without JavaScript. */
 .hero__inner {
+	--title: clamp(44px, min(14px + 5vw, 9.6vh), 86px);
+	--measure: calc(var(--title) * 7.54);
+	--lede: clamp(19px, var(--title) * 0.27, 23px);
+	--lede-room: calc(var(--lede) * 1.45 + var(--title) * 0.4);
+	--field: clamp(56px, var(--title) * 0.75, 64px);
 	position: relative;
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
-	align-items: center;
-	gap: 64px;
-	padding-block: 56px 60px;
+	grid-template-columns: max-content minmax(0, 1fr);
+	grid-template-rows: auto auto auto auto;
+	column-gap: clamp(48px, 8vw, 120px);
+	padding-block: clamp(52px, 26.67vh - 140px, 112px) clamp(56px, 26.67vh - 136px, 116px);
+}
+
+/* The copy and the card are laid out as one grid, so the card can take its
+   top and foot from the copy's lines. */
+.hero__copy,
+.hero__media {
+	display: contents;
 }
 
 .hero__title {
-	margin-bottom: 26px;
+	grid-area: 1 / 1;
+	margin-bottom: calc(var(--title) * 0.28);
 	color: #fff;
 	font-family: var(--display);
-	font-size: clamp(38px, 26px + 2.8vw, 64px);
+	font-size: var(--title);
 	font-weight: 800;
-	line-height: 1.02;
-	letter-spacing: -0.025em;
+	line-height: 0.98;
+	letter-spacing: -0.03em;
 }
 
 .hero__line {
@@ -56,15 +83,57 @@
 	color: var(--gold);
 }
 
+.hero__lede {
+	grid-area: 2 / 1;
+	max-width: var(--measure);
+	margin: 0 0 calc(var(--title) * 0.4);
+	color: var(--on-hero-muted);
+	font-size: var(--lede);
+	line-height: 1.45;
+	text-wrap: balance;
+}
+
+.hero__search {
+	grid-area: 3 / 1;
+	max-width: var(--measure);
+}
+
+/* A link to the field (the header's search button on other pages goes to
+   #search) leaves the page at its top, the headline in view, as long as the
+   field is on the first screen. */
+.hero__search .search__input {
+	height: var(--field);
+	padding-left: 58px;
+	scroll-margin-top: calc(100svh - 96px);
+}
+
+.hero__search .search-icon {
+	left: 20px;
+}
+
+/* The facts and the line under the card share a row of the grid and one
+   set of type, so their words sit on one baseline. The links in them are
+   44 px targets. */
+.hero__facts,
+.hero__under {
+	grid-row: 4;
+	align-self: start;
+	min-height: 44px;
+	margin-top: 10px;
+	font-size: 16px;
+	line-height: 1.25;
+}
+
 .hero__facts {
+	grid-column: 1;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px 26px;
-	margin: 20px 0 0;
+	align-items: center;
+	gap: 0 28px;
+	margin-bottom: 0;
 	padding: 0;
 	list-style: none;
 	color: var(--on-hero-muted);
-	font-size: 16px;
 	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 }
@@ -84,79 +153,113 @@
 	background: var(--gold);
 }
 
+/* The links' focus rings sit inside their 44 px boxes, clear of the field
+   and the card; the padding that makes room for them is taken back in the
+   margins, so the words keep their places. */
 .hero__facts a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	margin-inline: -8px;
+	padding-inline: 8px;
+	border-radius: 4px;
 	color: #fff;
 	text-underline-offset: 4px;
+}
+
+.hero__facts a:focus-visible {
+	outline-offset: -3px;
 }
 
 .hero__facts a:hover {
 	color: var(--gold);
 }
 
-/* The card: a window onto the wall, with square stills inside a 14 px frame. */
+/* The card: a window onto the wall, its stills square cornered inside a
+   10 px frame. It runs from the headline's capitals (0.135 of the headline's
+   size below the top of its line) to the foot of the search field. */
 .hero__card {
 	position: relative;
-	aspect-ratio: 16 / 9;
+	grid-area: 1 / 2 / 4 / 3;
+	margin-top: calc(var(--title) * 0.135);
 	overflow: hidden;
 	overflow: clip;
 	border: 1px solid rgb(255 255 255 / 16%);
-	border-radius: 14px;
+	border-radius: 10px;
 	background: var(--band-deep);
-	box-shadow: 0 30px 70px rgb(0 16 34 / 50%);
+	box-shadow: 0 24px 60px rgb(0 16 34 / 40%);
+}
+
+/* Without JavaScript there is no search, so the lede, which is about it,
+   stays hidden too (src/js/main.js shows both). Beside the copy the card
+   keeps the height it has with them, from the headline's capitals to where
+   the field's foot would be (give or take a line where the lede would wrap
+   differently from the way it usually does at that width). */
+@media (min-width: 800px) {
+	.hero__inner:has(.hero__search[hidden]) .hero__card {
+		min-height: calc(var(--title) * 2.105 + var(--lede-room) + var(--field));
+	}
+}
+
+/* Under the card: the name of the still under the pointer, and the way to
+   the Video wall at the card's right edge. */
+.hero__under {
+	grid-column: 2;
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	min-width: 0;
 }
 
 .hero__pointing {
-	position: absolute;
-	top: 12px;
-	left: 12px;
-	z-index: 2;
-	max-width: calc(100% - 24px);
-	padding: 7px 11px 8px;
-	border-radius: 4px;
-	background: var(--band-deep);
-	color: #fff;
-	font-size: 16px;
+	overflow: hidden;
+	min-width: 0;
+	margin: 0;
+	color: var(--gold);
 	font-weight: 600;
-	line-height: 1.25;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 	opacity: 0;
-	transform: translateY(-4px);
-	transition: opacity 160ms var(--state), transform 160ms var(--state);
-	pointer-events: none;
+	transition: opacity 160ms var(--state);
 }
 
 .hero__pointing.is-shown {
 	opacity: 1;
-	transform: none;
 }
 
-/* The one rounded control, floating on the card like a player's button. */
+/* Its focus ring is gold, on the gradient alone, with no still behind it. */
 .hero__open {
-	position: absolute;
-	right: 14px;
-	bottom: 14px;
-	z-index: 2;
 	display: inline-flex;
+	flex: 0 0 auto;
 	align-items: center;
-	gap: 8px;
+	gap: 10px;
 	min-height: 44px;
-	padding: 0 18px;
-	border-radius: 999px;
-	background: #fff;
-	color: var(--blue);
-	font-size: 16px;
+	margin-right: -10px;
+	margin-left: auto;
+	padding-inline: 10px;
+	border-radius: 4px;
+	color: #fff;
 	font-weight: 700;
-	text-decoration: none;
+	text-decoration: underline;
+	text-decoration-color: rgb(255 255 255 / 0%);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 6px;
 	white-space: nowrap;
-	box-shadow: 0 6px 18px rgb(0 16 34 / 35%);
-	transition: background-color 180ms var(--state), color 180ms var(--state);
+	transition: text-decoration-color 180ms var(--state);
 }
 
 .hero__open:hover {
-	background: #e8f0f8;
-	color: var(--band);
+	text-decoration-color: var(--gold);
+}
+
+.hero__open:focus-visible {
+	outline: 3px solid var(--gold);
+	outline-offset: -3px;
+	text-decoration-color: var(--gold);
 }
 
 .hero__open .arrow-icon {
+	color: var(--gold);
 	transition: transform 180ms var(--state);
 }
 
@@ -164,65 +267,207 @@
 	transform: translateX(3px);
 }
 
-/* From 800 to 1099 px the copy and a 4:3 card share the row; from 700 to
-   799 px the copy sits over a 3:1 card. */
+/* Touch screens have no pointer to name a still under. */
+@media (hover: none) {
+	.hero__pointing {
+		display: none;
+	}
+}
+
+/* From 800 to 1099 px the copy is narrower and its lede wraps, except on
+   the widest and tallest of these screens; the card beside it has four
+   columns. */
 @media (max-width: 1099px) {
 	.hero__inner {
-		gap: 40px;
-		padding-block: 44px 48px;
-	}
-
-	.hero__title {
-		margin-bottom: 22px;
-		font-size: 44px;
-	}
-
-	.hero__card {
-		aspect-ratio: 4 / 3;
+		--title: clamp(44px, min(5.9vw, 9.6vh), 62px);
+		--lede: 19px;
+		--lede-room: calc(var(--lede) * 1.45 * 2 + var(--title) * 0.4);
+		--field: 58px;
 	}
 }
 
+/* Under 800 px the hero stacks: the copy, then the card as one row of whole
+   stills (six on a tablet held upright), then the way to the Video wall at
+   its left edge. Its air shrinks with a short screen, and on a phone held
+   sideways the headline is held to the screen's height. */
 @media (max-width: 799px) {
 	.hero__inner {
+		--title: clamp(36px, min(7.4vw, 11vh), 58px);
 		grid-template-columns: minmax(0, 1fr);
-		gap: 32px;
-		padding-block: 40px 44px;
+		grid-template-rows: none;
+		padding-block: clamp(28px, 8vh - 32px, 56px) clamp(20px, 8vh - 44px, 44px);
+	}
+
+	.hero__title,
+	.hero__lede,
+	.hero__search,
+	.hero__facts,
+	.hero__card,
+	.hero__under {
+		grid-area: auto;
+	}
+
+	.hero__lede,
+	.hero__search {
+		max-width: none;
 	}
 
 	.hero__title {
-		font-size: clamp(38px, 26px + 2.8vw, 48px);
+		margin-bottom: 20px;
+	}
+
+	.hero__lede {
+		margin-bottom: 26px;
+	}
+
+	.hero__facts {
+		margin-top: 6px;
 	}
 
 	.hero__card {
-		aspect-ratio: 3 / 1;
-	}
-}
-
-@media (max-width: 699px) {
-	.hero__inner {
-		gap: 26px;
-		padding-block: 30px 32px;
+		margin-top: clamp(14px, 4vh - 16px, 32px);
+		aspect-ratio: 2880 / 750;
 	}
 
-	.hero__title {
-		margin-bottom: 18px;
-	}
-
-	.hero__card {
-		aspect-ratio: 16 / 9;
-		border-radius: 10px;
+	.hero__under {
+		margin-top: 6px;
 	}
 
 	.hero__open {
-		right: 10px;
-		bottom: 10px;
-		padding: 0 16px;
-		font-size: 15px;
+		order: -1;
+		margin-right: 0;
+		margin-left: -10px;
+	}
+
+	.hero__pointing {
+		margin-left: auto;
+	}
+}
+
+/* On a phone, and up to 699 px, the stills in the card's row keep about
+   a phone's size: three in a row, four from 520 px, five from 620 px
+   (src/css/components/wall.css). */
+@media (max-width: 699px) {
+	.hero__inner {
+		--title: clamp(34px, 11.2vw, 46px);
+		padding-block: clamp(20px, 5vh - 14px, 32px) clamp(10px, 4vh - 20px, 20px);
+	}
+
+	.hero__title {
+		margin-bottom: 12px;
+		line-height: 1;
+	}
+
+	.hero__lede {
+		margin-bottom: 18px;
+		font-size: 18px;
+		line-height: 1.4;
+	}
+
+	.hero__search .search__input {
+		height: 54px;
+		padding-left: 50px;
+	}
+
+	.hero__search .search-icon {
+		left: 16px;
+	}
+
+	.hero__facts {
+		margin-top: 4px;
+		column-gap: 22px;
+	}
+
+	.hero__card {
+		margin-top: 20px;
+		border-radius: 8px;
+		aspect-ratio: 2400 / 750;
+	}
+
+	.hero__under {
+		margin-top: 2px;
+	}
+}
+
+@media (max-width: 619px) {
+	.hero__card {
+		aspect-ratio: 1920 / 750;
+	}
+}
+
+@media (max-width: 519px) {
+	.hero__card {
+		aspect-ratio: 1440 / 750;
+	}
+}
+
+/* A short phone keeps the lede and its stills; the headline steps down a
+   size so the index still starts on the first screen. */
+@media (max-width: 699px) and (max-height: 760px) {
+	.hero__inner {
+		--title: clamp(32px, 10vw, 40px);
+	}
+
+	.hero__lede {
+		margin-bottom: 16px;
+		font-size: 17px;
+	}
+
+	.hero__search .search__input {
+		height: 50px;
+	}
+}
+
+/* Under 360 px the facts take two lines; the first keeps its distance from
+   the field. */
+@media (max-width: 359px) {
+	.hero__facts {
+		margin-top: 8px;
+	}
+}
+
+/* On a phone this short the lede gives way, so the stills and the start of
+   the index still fit on the first screen. */
+@media (max-width: 699px) and (max-height: 700px) {
+	.hero__inner {
+		--title: clamp(32px, 9vw, 38px);
+		padding-block: 14px 6px;
+	}
+
+	.hero__lede {
+		display: none;
+	}
+
+	.hero__title {
+		margin-bottom: 14px;
+	}
+
+	.hero__card {
+		margin-top: 16px;
+	}
+}
+
+@media (max-width: 699px) and (min-width: 360px) and (max-height: 700px) {
+	.hero__facts {
+		margin-top: 0;
+	}
+}
+
+/* A phone held sideways is mostly header: under 480 px tall the lede gives
+   way and the air tightens, so the headline, the search and the facts are
+   whole on the first screen. From 1100 px the lede is one line and fits. */
+@media (min-width: 700px) and (max-width: 1099px) and (max-height: 480px) {
+	.hero__inner {
+		--lede-room: 0px;
+		padding-block: 24px 20px;
+	}
+
+	.hero__lede {
+		display: none;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.hero__pointing,
 	.hero__open:hover .arrow-icon {
 		transform: none;
 	}

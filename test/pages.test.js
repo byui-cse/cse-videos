@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage, videoWallPage } from "../lib/render.js";
-import { CARD_STILLS, WALL_LEAD, WALL_STILLS } from "../lib/wall.js";
+import { CARD_FRONT, CARD_STILLS, WALL_LEAD, WALL_STILLS } from "../lib/wall.js";
 import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
@@ -185,20 +185,29 @@ describe("home page", () => {
         assert.ok(!page.includes("<older>"));
     });
 
-    it("hides the search form until JavaScript can run it", async () => {
+    it("hides the search form, and the line about it, until JavaScript can run it", async () => {
         const page = await read("index.html");
         assert.match(page, /<form class="search hero__search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
+        assert.match(page, /<p class="hero__lede" data-needs-js hidden>/);
         assert.match(page, /name="q"/);
     });
 
-    it("puts the headline, the search and the counts beside a card holding the wall", async () => {
+    it("puts the headline, a line on the search, the search and the counts beside a card holding the wall", async () => {
         const page = await read("index.html");
         const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
-        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>/);
+        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>\s*<p class="hero__lede" data-needs-js hidden>Search by topic, title or caption, then copy a link to send\.<\/p>\s*<form class="search hero__search"/);
         assert.match(hero, /<ul class="hero__facts">\s*<li data-results>3 videos<\/li>\s*<li><a href="\.\/tags\/">3 topics<\/a><\/li>\s*<\/ul>/);
-        assert.match(hero, /<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
-        assert.match(hero, /<p class="hero__pointing" aria-hidden="true" data-wall-caption><\/p>/);
-        assert.match(hero, /<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"/);
+        assert.match(hero, /<div class="hero__media">\s*<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
+    });
+
+    it("puts the way to the video wall under the card, off its stills, beside the label that names a still", async () => {
+        const page = await read("index.html");
+        const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
+        const card = hero.slice(hero.indexOf('<div class="hero__card">'), hero.indexOf('<div class="hero__under">'));
+        assert.ok(!card.includes("hero__open"));
+        assert.ok(!card.includes("data-wall-caption"));
+        assert.match(card, /<\/ul>\s*<\/div>\s*$/);
+        assert.match(hero, /<div class="hero__under">\s*<p class="hero__pointing" aria-hidden="true" data-wall-caption><\/p>\s*<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"[^>]*aria-hidden="true"/);
     });
 
     it("links home with ./ so the site name and All videos link clear a search", async () => {
@@ -334,10 +343,10 @@ describe("series on other pages", () => {
         assert.match(page, /<p class="quest__lede">A job search told as a game, in three parts, posted one a day from /);
     });
 
-    it("fold the index on phones after twelve videos, with a button for the rest", () => {
+    it("fold the index on phones after thirteen videos, the lead tile and six full rows, with a button for the rest", () => {
         const many = Array.from({ length: 14 }, (_, index) => ({ ...lone, id: `v${index}`, title: `Video ${index}` }));
         const page = homePage({ ...site, videos: many, covers: new Map() });
-        assert.match(page, /data-phone-fold="12"/);
+        assert.match(page, /data-phone-fold="13"/);
         assert.match(page, /<p class="index__more" data-show-all-row hidden><button class="button button--light" type="button" data-show-all>Show all 14 videos<\/button><\/p>/);
         assert.ok(!homePage(site).includes("data-show-all"));
     });
@@ -389,7 +398,18 @@ describe("series on other pages", () => {
             assert.match(picture, /^<source type="image\/avif" srcset="[^"]+-240\.avif 240w, [^"]+-360\.avif 360w, [^"]+-480\.avif 480w" sizes="[^"]+"><source type="image\/webp" srcset="[^"]+" sizes="[^"]+"><img[^>]* src="\.\/covers\/[\w-]+\.jpg"/);
         }
 
-        assert.match(page, /<link rel="preload" as="image" type="image\/avif" imagesrcset="[^"]+" imagesizes="[^"]+" fetchpriority="high">/);
+    });
+
+    it("load the card's front stills at once, preload none and hurry none, and leave the rest until a search brings them forward", () => {
+        const many = Array.from({ length: CARD_FRONT + 4 }, (_, index) => ({ ...lone, id: `v${index}`, title: `Video ${index}` }));
+        const covers = new Map(many.map((video) => [video.id, { width: 480, height: 750 }]));
+        const page = homePage({ ...site, videos: many, covers });
+        const wall = page.slice(page.indexOf("data-wall"), page.indexOf("</ul>", page.indexOf("data-wall")));
+        const loading = [...wall.matchAll(/<img [^>]*loading="(\w+)"/g)].map((match) => match[1]);
+
+        assert.deepEqual(loading, [...Array(CARD_FRONT).fill("eager"), ...Array(loading.length - CARD_FRONT).fill("lazy")]);
+        assert.ok(!page.includes('rel="preload" as="image"'));
+        assert.ok(!wall.includes("fetchpriority"));
     });
 
     it("put every video on the card's wall once, then echoes to fill it, as links, in a fixed shuffle", () => {
@@ -653,6 +673,29 @@ describe("video wall page", () => {
             assert.match(page, new RegExp(`<a class="site-nav__link" href="${href}"><span class="site-nav__wide">Video wall<\\/span>`), file);
             assert.match(page, new RegExp(`<li><a href="${href}">Video wall<\\/a><\\/li>`), file);
         }
+    });
+
+    it("loads the first row at its widest at once, hurries the first two rows on a phone, loads each video's own still as its echo there, and leaves the rest lazy", () => {
+        const many = Array.from({ length: 36 }, (_, index) => ({ id: `v${index}`, title: `Video ${index}`, instagram: `https://www.instagram.com/reel/V${index}/`, datePosted: "2026-11-01", tags: ["x"] }));
+        const page = videoWallPage({ videos: many, tags: [], names: {}, covers: new Map(many.map((video) => [video.id, { width: 480, height: 750 }])), siteUrl: null });
+        const start = page.indexOf("data-wall-page");
+        const stills = [...page.slice(start, page.indexOf("</ul>", start)).matchAll(/<li class="wall__still( wall__still--echo)?" data-id="([\w-]+)".*?(<img [^>]*>)/g)]
+            .map(([, echo, id, img]) => ({ echo: Boolean(echo), id, img }));
+        // The videos on the first row at the widest, and whether each is hurried.
+        const lead = new Map(stills.slice(0, WALL_LEAD).map(({ id }, slot) => [id, slot < 12]));
+
+        assert.equal(stills.length, WALL_STILLS);
+        assert.equal(lead.size, WALL_LEAD);
+        stills.forEach(({ echo, id, img }, slot) => {
+            const early = slot < WALL_LEAD || (!echo && lead.has(id));
+            assert.match(img, early ? /loading="eager"/ : /loading="lazy"/, `${slot}`);
+            assert.equal(img.includes('fetchpriority="high"'), slot < WALL_LEAD ? slot < 12 : early && lead.get(id), `${slot}`);
+        });
+        // The own stills share their echoes' pictures, so nothing more loads at once.
+        const files = new Set(stills.filter(({ img }) => img.includes('loading="eager"')).map(({ img }) => img.match(/src="([^"]+)"/)[1]));
+        assert.equal(files.size, WALL_LEAD);
+        assert.equal(stills.filter(({ echo, img }) => !echo && img.includes('loading="eager"')).length, WALL_LEAD);
+        assert.ok(!page.includes('rel="preload" as="image"'));
     });
 
     it("fills a small library's wall with echoes, and draws an empty library without any", () => {

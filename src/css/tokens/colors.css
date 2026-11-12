@@ -29,7 +29,7 @@
 	--focus-on-band: #d0901e;
 	--photo-brightness: 1;
 	--veil: rgb(0 55 99 / 45%);
-	--veil-light: rgb(0 55 99 / 28%);
+	--veil-card: rgb(0 55 99 / 12%);
 	--hero-start: #00589c;
 	--hero-grid: rgb(255 255 255 / 5%);
 	--on-hero-muted: #cdd9e6;
@@ -54,7 +54,7 @@
 		--focus: #d0901e;
 		--photo-brightness: 0.87;
 		--veil: rgb(0 27 54 / 50%);
-		--veil-light: rgb(0 27 54 / 34%);
+		--veil-card: rgb(0 27 54 / 18%);
 		--hero-start: #00335d;
 		--hero-grid: rgb(255 255 255 / 4%);
 	}

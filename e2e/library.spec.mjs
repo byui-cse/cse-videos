@@ -381,20 +381,32 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
     }
 }
 
-test("pointing at a still in the hero's card names it in the card's corner, and a click opens it", async (t) => {
+test("pointing at a still in the hero's card names it under the card, dims the others, and a click opens it", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const wall = page.locator("[data-wall]");
     assert.equal(await wall.locator("[data-id]:not(.wall__still--echo) a").count(), videos.length);
     const label = page.locator("[data-wall-caption]");
     assert.equal(await label.evaluate((node) => getComputedStyle(node).opacity), "0");
-    const still = wall.locator("[data-id]").nth(10);
+    // A still the card shows whole.
+    const slot = await page.evaluate(() => {
+        const card = document.querySelector(".hero__card").getBoundingClientRect();
+        return [...document.querySelectorAll(".hero__card [data-id]")].findIndex((item) => {
+            const box = item.getBoundingClientRect();
+            return box.top >= card.top && box.bottom <= card.bottom && box.left >= card.left && box.right <= card.right;
+        });
+    });
+    assert.ok(slot >= 0);
+    const still = wall.locator("[data-id]").nth(slot);
     const id = await still.getAttribute("data-id");
 
     await still.hover();
     await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await label.elementHandle());
     assert.equal(await label.textContent(), smartQuotes(videos.find((item) => item.id === id).title));
     await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await still.locator(".wall__veil").elementHandle());
+    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await still.locator("picture").elementHandle());
+    const other = wall.locator("[data-id]").nth(slot === 0 ? 1 : 0).locator("picture");
+    await page.waitForFunction((node) => Number(getComputedStyle(node).opacity) < 0.6, await other.elementHandle());
 
     await page.mouse.move(0, 0);
     await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await label.elementHandle());
@@ -402,13 +414,18 @@ test("pointing at a still in the hero's card names it in the card's corner, and 
     await page.waitForURL(`**/videos/${id}/`);
 });
 
-test("the card's button opens the video wall", async (t) => {
+test("the link under the card opens the video wall", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const open = page.getByRole("link", { name: "Open the video wall" });
     const card = await page.locator(".hero__card").boundingBox();
+    const hero = await page.locator(".hero").boundingBox();
     const box = await open.boundingBox();
-    assert.ok(box.x >= card.x && box.x + box.width <= card.x + card.width && box.y + box.height <= card.y + card.height, "the button sits inside the card");
+    assert.equal(await page.locator(".hero__card .hero__open").count(), 0, "the link is off the card's stills");
+    assert.ok(box.y >= card.y + card.height && box.y + box.height <= hero.y + hero.height, "the link sits under the card, in the hero");
+    // Its words end at the card's right edge.
+    const right = await open.evaluate((node) => node.querySelector(".arrow-icon").getBoundingClientRect().right);
+    assert.ok(Math.abs(right - (card.x + card.width)) <= 4, `${right} ${card.x + card.width}`);
     await open.click();
     await page.waitForURL("**/wall/");
     assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Video wall");
@@ -446,7 +463,7 @@ test("the wall stays out of the keyboard's way: tabbing from the search goes to 
         for (const [name, box] of [["headline", title], ["search", search], ["card", card]]) {
             assert.ok(box.y >= hero.y && box.y + box.height <= Math.min(hero.y + hero.height, viewport.height) + 1, `${viewport.width}: the ${name} is on screen in the hero`);
         }
-        assert.ok(hero.y + hero.height <= viewport.height * 0.75, `${viewport.width}: the hero leaves room for the index`);
+        assert.ok(hero.y + hero.height <= viewport.height * 0.8, `${viewport.width}: the hero leaves room for the index`);
     }
 });
 
@@ -490,16 +507,16 @@ test("clicking through the site raises no errors, view transitions included", as
     assert.deepEqual(errors, []);
 });
 
-test("on a phone the index opens on twelve videos, and a search still looks through all of them", async (t) => {
+test("on a phone the index opens on thirteen videos, and a search still looks through all of them", async (t) => {
     const viewport = { width: 390, height: 844 };
     const { page } = await site.page(t, { viewport });
     await page.goto("/");
-    assert.equal(await cards(page).count(), 12);
+    assert.equal(await cards(page).count(), 13);
     const showAll = page.getByRole("button", { name: `Show all ${videos.length} videos` });
     await showAll.click();
     assert.equal(await cards(page).count(), videos.length);
     assert.equal(await showAll.isVisible(), false);
-    assert.equal(await page.evaluate(() => document.activeElement.closest("[data-video-list] > li") === document.querySelectorAll("[data-video-list] > li")[12]), true);
+    assert.equal(await page.evaluate(() => document.activeElement.closest("[data-video-list] > li") === document.querySelectorAll("[data-video-list] > li")[13]), true);
 
     await page.goto("/");
     const input = page.getByRole("searchbox", { name: "Search videos" });
@@ -507,10 +524,10 @@ test("on a phone the index opens on twelve videos, and a search still looks thro
     await input.fill("job");
     const expected = await page.locator("[data-video-list] > li").evaluateAll((items) => items.filter((item) =>
         item.dataset.search.split(" ").some((word) => word.startsWith("job"))).length);
-    assert.ok(expected > 12, String(expected));
+    assert.ok(expected > 13, String(expected));
     assert.equal(await cards(page).count(), expected);
     await input.fill("");
-    assert.equal(await cards(page).count(), 12);
+    assert.equal(await cards(page).count(), 13);
 
     for (const javaScriptEnabled of [false]) {
         const { page: plain } = await site.page(t, { viewport, javaScriptEnabled });
@@ -544,6 +561,20 @@ test("a search lights its stills on the wall and closes up the index", async (t)
     const secondBox = await cards(page).nth(1).boundingBox();
     assert.deepEqual([secondBox.x, secondBox.y], [firstBox.x, firstBox.y]);
     assert.equal(await page.locator("[data-wall] .is-match .wall__edge").first().evaluate((node) => getComputedStyle(node).opacity), "1");
+
+    // The card brings its matches to its front rows, so every one is on show.
+    for (const query of ["portfolio", "robot"]) {
+        await page.getByRole("searchbox").fill(query);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const hidden = await page.evaluate(() => {
+            const card = document.querySelector(".hero__card").getBoundingClientRect();
+            return [...document.querySelectorAll("[data-wall] .is-match")].filter((item) => {
+                const box = item.getBoundingClientRect();
+                return box.top < card.top - 1 || box.top + box.height / 2 > card.bottom || box.left < card.left - 1 || box.right > card.right + 1;
+            }).map((item) => item.dataset.id);
+        });
+        assert.deepEqual(hidden, [], query);
+    }
 
     await page.getByRole("searchbox").fill("");
     assert.equal(await page.locator("[data-wall] .is-match, [data-wall] .is-dim").count(), 0);
@@ -695,6 +726,125 @@ test("on a tall portrait screen the video wall ends with its strip, and the page
     assert.ok(Math.abs(stage.y + stage.height - (strip.y + strip.height)) <= 1, JSON.stringify({ stage, strip }));
 });
 
+test("tabbing to the video wall's search leaves the page where it is", async (t) => {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/wall/");
+        for (let step = 0; step < 20 && !(await page.evaluate(() => document.activeElement?.id === "search")); step++) {
+            await page.keyboard.press("Tab");
+        }
+        assert.equal(await page.evaluate(() => document.activeElement.id), "search", `${viewport.width}`);
+        assert.equal(await page.evaluate(() => window.scrollY), 0, `${viewport.width}`);
+    }
+});
+
+for (const { viewport, isMobile = false } of [
+    { viewport: { width: 844, height: 390 }, isMobile: true }, { viewport: { width: 667, height: 375 }, isMobile: true },
+    { viewport: { width: 720, height: 450 } }, { viewport: { width: 640, height: 400 } }
+]) {
+    test(`on a short screen the video wall's heading and search come first at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport, isMobile, hasTouch: isMobile });
+        await page.goto("/wall/");
+        const heading = await page.getByRole("heading", { level: 1, name: "Video wall" }).boundingBox();
+        const search = await page.getByRole("searchbox", { name: "Search videos" }).boundingBox();
+        assert.ok(heading.y >= 0 && search.y + search.height <= viewport.height, JSON.stringify({ heading, search }));
+    });
+}
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 1024, height: 1366 }, { width: 768, height: 1024 }, { width: 390, height: 844 }, { width: 360, height: 740 }, { width: 320, height: 568 }]) {
+    test(`the video wall's docked strip fits the room the wall leaves it at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/wall/");
+        await page.evaluate(() => document.fonts.ready);
+        const room = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip")));
+        const heights = [];
+        for (const query of ["", "informational interviews"]) {
+            await page.getByRole("searchbox").fill(query);
+            heights.push(await page.locator(".band").evaluate((node) => node.getBoundingClientRect().height));
+        }
+        assert.ok(heights.every((height) => height <= room), `${heights} > ${room}`);
+        // On a phone it keeps most of the screen for the wall.
+        if (viewport.width < 700) {
+            assert.ok(heights[0] / viewport.height <= 0.21, `${heights[0]}`);
+        }
+    });
+}
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }, { width: 320, height: 568 }]) {
+    test(`on a touch screen the strip names the focused still in full, and no caption spills over its neighbours at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport, isMobile: true, hasTouch: true });
+        await page.goto("/wall/");
+        const input = page.getByRole("searchbox", { name: "Search videos" });
+        await input.fill("interview");
+        await input.press("Enter");
+        const focused = page.locator(":focus");
+        const title = await focused.getAttribute("href").then((href) => smartQuotes(videos.find((item) => href.endsWith(`/${item.id}/`)).title));
+        const label = page.locator("[data-wall-caption]");
+        await page.waitForFunction(([node, text]) => node.textContent === text && getComputedStyle(node).opacity === "1", [await label.elementHandle(), title]);
+        const [still, caption] = await Promise.all([focused.boundingBox(), focused.locator(".wall__caption").boundingBox()]);
+        assert.ok(caption.height <= 1 || (caption.y >= still.y && caption.y + caption.height <= still.y + still.height + 1), JSON.stringify({ still, caption }));
+        assert.ok(still.y >= 0 && still.y + still.height <= viewport.height, JSON.stringify(still));
+
+        // Every title fits the label whole, and the strip keeps to its room.
+        const fit = await label.evaluate((node) => {
+            const room = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--strip"));
+            const cut = [];
+            let tallest = 0;
+
+            for (const name of new Set([...document.querySelectorAll("[data-wall-page] .wall__caption")].map((item) => item.textContent))) {
+                node.textContent = name;
+                if (node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1) {
+                    cut.push(name);
+                }
+                tallest = Math.max(tallest, document.querySelector(".band").getBoundingClientRect().height);
+            }
+
+            return { cut, tall: tallest <= room };
+        });
+        assert.deepEqual(fit, { cut: [], tall: true });
+    });
+}
+
+test("in forced colours a focused still on the video wall shows its ring over the picture", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 }, forcedColors: "active" });
+    await page.goto("/wall/");
+    await page.getByRole("searchbox", { name: "Search videos" }).focus();
+    await page.keyboard.press("Tab");
+    const ring = await page.locator(":focus").evaluate((node) => {
+        const after = getComputedStyle(node, "::after");
+        return { style: after.outlineStyle, width: after.outlineWidth, opacity: after.opacity };
+    });
+    assert.deepEqual(ring, { style: "solid", width: "3px", opacity: "1" });
+});
+
+for (const path of ["/", "/wall/"]) {
+    test(`the search hint fits its field at 320 px on ${path}`, async (t) => {
+        const { page } = await site.page(t, { viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+        await page.goto(path);
+        await page.evaluate(() => document.fonts.ready);
+        const fit = await page.evaluate(() => {
+            const input = document.querySelector("#search");
+            const style = getComputedStyle(input);
+            const context = document.createElement("canvas").getContext("2d");
+            context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            const room = input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            return { text: context.measureText(input.placeholder).width, room };
+        });
+        assert.ok(fit.text <= fit.room, JSON.stringify(fit));
+    });
+}
+
+test("the header's search button on another page lands on the hero with its headline in view", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto(videoPath);
+    await page.locator("[data-search-button]").click();
+    await page.waitForURL(/#search$/);
+    await page.waitForFunction(() => document.activeElement?.id === "search");
+    assert.equal(await page.evaluate(() => window.scrollY), 0);
+    const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+    assert.ok(title.y >= 0);
+});
+
 test("the video wall's focus ring shows over the still, and the strip keeps naming the focused still", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/wall/");
@@ -736,7 +886,60 @@ test("a video opened from the video wall links back to it, and to its search", a
     assert.equal(await page.getByRole("searchbox", { name: "Search videos" }).inputValue(), "portfolio");
 });
 
-for (const viewport of [{ width: 1440, height: 900 }, { width: 1100, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+// The baseline of an element's first line of words, from a probe put before them.
+const baseline = (node) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let text = walker.nextNode();
+
+    while (text && !text.textContent.trim()) {
+        text = walker.nextNode();
+    }
+
+    const probe = document.createElement("span");
+    probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+    text.parentNode.insertBefore(probe, text);
+    const y = probe.getBoundingClientRect().top;
+    probe.remove();
+    return y;
+};
+
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 900, height: 800 }, { width: 844, height: 390 }]) {
+    test(`the card shares the copy's edges at ${viewport.width}x${viewport.height}`, async (t) => {
+        // Reduced motion, so the headline isn't caught rising into place.
+        const { page } = await site.page(t, { viewport, bypassCSP: true, reducedMotion: "reduce" });
+        await page.goto("/");
+        await page.evaluate(() => document.fonts.ready);
+        const edges = await page.evaluate((measure) => {
+            const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+            const read = new Function(`return (${measure})`)();
+            const title = document.querySelector(".hero__line");
+            const size = parseFloat(getComputedStyle(title).fontSize);
+            return {
+                // The capitals' top: the first line's baseline less the face's cap height.
+                capTop: read(title) - size * 0.655,
+                cardTop: box(".hero__card").top,
+                cardBottom: box(".hero__card").bottom,
+                cardRight: box(".hero__card").right,
+                searchBottom: box(".hero .search__input").bottom,
+                searchRight: box(".hero .search__input").right,
+                titleRight: (() => { const range = document.createRange(); range.selectNodeContents(title); return range.getBoundingClientRect().right; })(),
+                factsLine: read(document.querySelector(".hero__facts")),
+                openLine: read(document.querySelector(".hero__open")),
+                containerRight: box(".hero__inner").right - parseFloat(getComputedStyle(document.querySelector(".hero__inner")).paddingRight)
+            };
+        }, baseline.toString());
+        assert.ok(Math.abs(edges.cardTop - edges.capTop) <= 2, `card top ${edges.cardTop}, capitals ${edges.capTop}`);
+        assert.ok(Math.abs(edges.cardBottom - edges.searchBottom) <= 1, `card foot ${edges.cardBottom}, field foot ${edges.searchBottom}`);
+        assert.ok(Math.abs(edges.openLine - edges.factsLine) <= 1, `link ${edges.openLine}, facts ${edges.factsLine}`);
+        assert.ok(Math.abs(edges.searchRight - edges.titleRight) <= 2, `field ${edges.searchRight}, headline ${edges.titleRight}`);
+        assert.ok(Math.abs(edges.cardRight - edges.containerRight) <= 1, `card ${edges.cardRight}, column ${edges.containerRight}`);
+    });
+}
+
+for (const viewport of [
+    { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1100, height: 900 }, { width: 1024, height: 768 },
+    { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 660, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 640 }
+]) {
     test(`the hero's card is filled to every edge at ${viewport.width}x${viewport.height}`, async (t) => {
         const { page } = await site.page(t, { viewport });
         await page.goto("/");
@@ -757,7 +960,37 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1100, height: 900
     });
 }
 
-for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+for (const viewport of [{ width: 740, height: 360 }, { width: 812, height: 375 }, { width: 844, height: 390 }, { width: 932, height: 430 }]) {
+    test(`on a phone held sideways the headline, the search and the facts are on the first screen at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport, isMobile: true, hasTouch: true });
+        await page.goto("/");
+        await page.evaluate(() => document.fonts.ready);
+        const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+        const search = await page.getByRole("searchbox", { name: "Search videos" }).boundingBox();
+        const facts = await page.locator(".hero__facts").boundingBox();
+        assert.ok(title.y >= 0 && search.y + search.height <= viewport.height && facts.y + facts.height <= viewport.height, JSON.stringify({ title, search, facts }));
+    });
+}
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
+    test(`without JavaScript the hero leaves out the line about the search, and its card keeps its height at ${viewport.width}x${viewport.height}`, async (t) => {
+        const seen = [];
+        for (const javaScriptEnabled of [true, false]) {
+            const { page } = await site.page(t, { viewport, javaScriptEnabled });
+            await page.goto("/");
+            await page.evaluate(() => document.fonts.ready);
+            seen.push({ lede: await page.locator(".hero__lede").isVisible(), card: (await page.locator(".hero__card").boundingBox()).height });
+        }
+        assert.deepEqual(seen.map(({ lede }) => lede), [true, false]);
+        assert.ok(Math.abs(seen[0].card - seen[1].card) <= 1, JSON.stringify(seen));
+    });
+}
+
+for (const viewport of [
+    { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 },
+    { width: 799, height: 900 }, { width: 768, height: 1024 }, { width: 760, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 },
+    { width: 375, height: 667 }, { width: 360, height: 740 }, { width: 360, height: 640 }, { width: 320, height: 640 }
+]) {
     test(`the All videos heading is on the first screen at ${viewport.width}x${viewport.height}`, async (t) => {
         const { page } = await site.page(t, { viewport });
         await page.goto("/");
