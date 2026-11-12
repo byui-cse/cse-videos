@@ -1,19 +1,41 @@
 /**
  * Type: Sofia Sans Semi Condensed for display, Sofia Sans for text and UI.
  * A perfect fourth from 16 px at 1440 and 1.2 from 16 px at 390, fluid
- * between. Nothing under 16 px.
+ * between. Nothing under 16 px. Each stack names a local font tuned to the
+ * web font's widths and heights (base/fonts.css), so nothing moves when the
+ * web font arrives.
+ *
+ * Headings take one size per level on every page: a page's title (the home
+ * hero sets its own), a section's title, a smaller section's title, and a
+ * card's name. The footer's wordmark is not a heading.
+ *
+ * The vertical rhythm sits beside the type it spaces: a section pads its
+ * top and bottom with one of three steps, so two gaps between sections are
+ * either the same or clearly different.
  */
 :root {
-	--display: "Sofia Sans Semi Condensed", "Arial Narrow", Arial, sans-serif;
-	--text: "Sofia Sans", Arial, Helvetica, sans-serif;
+	--display: "Sofia Sans Semi Condensed", "Sofia Sans Semi Condensed Fallback", "Arial Narrow", Arial, sans-serif;
+	--text: "Sofia Sans", "Sofia Sans Fallback", Arial, Helvetica, sans-serif;
 
 	--step-1: clamp(19px, 18.26px + 0.19vw, 21px);
 	--step-2: clamp(23px, 21.14px + 0.476vw, 28px);
 	--step-3: clamp(28px, 24.29px + 0.952vw, 38px);
 	--step-4: clamp(33px, 26.69px + 1.619vw, 50px);
 	--step-5: clamp(40px, 29.97px + 2.571vw, 67px);
-	--step-6: clamp(48px, 32.4px + 4vw, 90px);
-	--step-7: clamp(64px, 43.2px + 5.333vw, 120px);
-	--h1: clamp(33px, 20.37px + 3.238vw, 67px);
+
+	/* 67 px at 1440, 40 px at 390. */
+	--h1: var(--step-5);
+	/* 50 px at 1440, 28 px at 390: a phone's section title sits well under
+	   its page title. */
+	--h2: clamp(28px, 19.83px + 2.095vw, 50px);
+	/* 38 px at 1440, 28 px at 390. */
+	--h3: var(--step-3);
+	/* 28 px at 1440, 23 px at 390. */
+	--h4: var(--step-2);
 	--strip-title: clamp(23px, 17.43px + 1.429vw, 38px);
+
+	/* 40, 64 and 88 px at 390; 64, 96 and 128 px at 1440. */
+	--section-s: clamp(40px, 31.09px + 2.286vw, 64px);
+	--section-m: clamp(64px, 52.11px + 3.048vw, 96px);
+	--section-l: clamp(88px, 73.14px + 3.81vw, 128px);
 }

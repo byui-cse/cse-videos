@@ -1,13 +1,13 @@
 /**
  * Search and sort for a grid of videos. Everything lives in the address, so a
- * search like ?q=portfolio&sort=oldest can be shared as a link. On the home
- * page a search also lights the matching stills on the wall and dims the
- * rest, and the grid closes up around what is left. On a phone the home
- * page's index opens on its first few videos with a button for the rest; a
- * search always looks through all of them.
+ * search like ?q=portfolio&sort=oldest can be shared as a link, and the grid
+ * closes up around what is left. The home page's hero stays as it is: a
+ * search changes only the list. On a phone the home page's index opens on
+ * its first few videos with a button for the rest; a search always looks
+ * through all of them.
  */
 import { matches } from "./search.js";
-import { countText, listUrl, readListParams } from "./state.js";
+import { countText, listUrl, orderText, readListParams } from "./state.js";
 
 const EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
 
@@ -67,14 +67,6 @@ export const initList = () => {
         words: (card.getAttribute("data-search") ?? "").split(" "),
         order: Number(card.getAttribute("data-order"))
     }));
-    // Every still on the hero's wall by video, echoes included.
-    const stills = new Map();
-
-    for (const still of document.querySelectorAll("[data-wall] [data-id]")) {
-        const id = still.getAttribute("data-id");
-        stills.set(id, [...(stills.get(id) ?? []), still]);
-    }
-
     const input = /** @type {HTMLInputElement | null} */ (document.querySelector("[data-search-input]"));
     const sort = /** @type {HTMLSelectElement | null} */ (document.querySelector("[data-sort]"));
     const results = document.querySelector("[data-results]");
@@ -85,13 +77,15 @@ export const initList = () => {
     const restText = results?.textContent ?? undefined;
     const baseTitle = document.title;
     const defaultOrder = list.dataset.defaultOrder === "oldest" ? "oldest" : "newest";
-    // A grid with a lead tile draws its first video two by two, whatever the
-    // search or order, and gives the browser the bigger size for its still.
+    // A grid with a lead tile draws its newest video two by two, and gives
+    // the browser the bigger size for its still. Only the plain list has one:
+    // in a search or the other order the first video isn't the newest.
     const { leadSizes, tileSizes } = list.dataset;
     // The build writes the cards in the list's default order.
     let shownOrder = defaultOrder;
     // How many videos a phone shows before "Show all"; 0 shows them all.
     const foldAt = Number(list.dataset.phoneFold) || 0;
+    let foldIndex = foldAt;
     const showAllRow = document.querySelector("[data-show-all-row]");
     const showAll = document.querySelector("[data-show-all]");
     let unfolded = false;
@@ -111,8 +105,9 @@ export const initList = () => {
 
     // The visible count changes right away. The screen reader copy waits for
     // a pause in typing, so it reads one result instead of one per key, and
-    // stays quiet when the page first loads.
-    const announce = (text, when) => {
+    // stays quiet when the page first loads. It can say more than the count,
+    // like the new order.
+    const announce = (text, when, spoken = text) => {
         clearTimeout(announceTimer);
 
         if (results) {
@@ -124,20 +119,23 @@ export const initList = () => {
         }
 
         if (when === "now") {
-            announcer.textContent = text;
+            announcer.textContent = spoken;
         } else {
             announceTimer = setTimeout(() => {
-                announcer.textContent = text;
+                announcer.textContent = spoken;
             }, 700);
         }
     };
 
-    const markLead = () => {
+    /**
+     * @param {boolean} plain no search, and the list's own order
+     */
+    const markLead = (plain) => {
         if (!leadSizes || !tileSizes) {
             return;
         }
 
-        const lead = list.querySelector(":scope > li:not([hidden])");
+        const lead = plain ? list.querySelector(":scope > li:not([hidden])") : null;
 
         for (const { card } of cards) {
             const on = card === lead;
@@ -154,13 +152,17 @@ export const initList = () => {
     };
 
     /**
-     * @param {{ announce?: "now" | "after-pause" | "never", animate?: boolean }} [options]
+     * @param {{ announce?: "now" | "after-pause" | "never", animate?: boolean, reordered?: boolean }} [options]
      */
-    const update = ({ announce: when = "now", animate = false } = {}) => {
+    const update = ({ announce: when = "now", animate = false, reordered = false } = {}) => {
         const query = input ? input.value.trim() : "";
         // A list without the menu, like a series, keeps its own order.
         const order = sort ? (sort.value === "oldest" ? "oldest" : "newest") : defaultOrder;
         const folded = foldAt > 0 && !unfolded && query === "";
+        // The fold counts the lead tile, two rows high, as one video. The
+        // other order has no lead tile, so it folds one sooner and still ends
+        // on a full row.
+        foldIndex = order === defaultOrder ? foldAt : Math.max(0, foldAt - 1);
         let shown = 0;
 
         const change = () => {
@@ -172,28 +174,23 @@ export const initList = () => {
 
             shown = 0;
 
-            for (const { card, id, words } of cards) {
+            for (const { card, words } of cards) {
                 const show = matches(words, query);
                 card.hidden = !show;
                 shown += show ? 1 : 0;
-
-                for (const still of stills.get(id) ?? []) {
-                    still.classList.toggle("is-match", query !== "" && show);
-                    still.classList.toggle("is-dim", query !== "" && !show);
-                }
             }
 
             // Past the fold the rest wait for "Show all" (CSS hides them on
             // phones only).
             [...list.children].forEach((card, index) => {
-                card.classList.toggle("tile--folded", folded && index >= foldAt);
+                card.classList.toggle("tile--folded", folded && index >= foldIndex);
             });
 
             if (showAllRow) {
                 showAllRow.hidden = !folded;
             }
 
-            markLead();
+            markLead(query === "" && order === defaultOrder);
         };
 
         if (animate) {
@@ -202,7 +199,8 @@ export const initList = () => {
             change();
         }
 
-        announce(countText(shown, cards.length, query, restText), when);
+        const count = countText(shown, cards.length, query, restText);
+        announce(count, when, reordered ? orderText(order, count) : count);
 
         if (empty) {
             empty.hidden = shown > 0 || query === "";
@@ -225,22 +223,45 @@ export const initList = () => {
         }
     };
 
+    // After a search is sent the results come onto the screen: the heading
+    // goes to the top unless the first result already shows whole. On a
+    // phone the hero's card sits between the field and the results, so they
+    // would otherwise stay below the fold.
+    const showResults = () => {
+        if (!heading) {
+            return;
+        }
+
+        // Moving focus to the results closes the phone keyboard and puts
+        // keyboard and screen reader users where the results start.
+        heading.focus({ preventScroll: true });
+
+        const first = [...list.children].find((card) => !card.hidden && card.getClientRects().length > 0)
+            ?? (empty && !empty.hidden ? empty : null);
+        const box = first?.getBoundingClientRect();
+
+        if (box && box.top >= 0 && box.bottom <= window.innerHeight) {
+            return;
+        }
+
+        const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        heading.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    };
+
     input?.addEventListener("input", () => update({ announce: "after-pause", animate: true }));
-    sort?.addEventListener("change", () => update({ animate: true }));
+    sort?.addEventListener("change", () => update({ animate: true, reordered: true }));
 
     input?.form?.addEventListener("submit", (event) => {
         event.preventDefault();
         update();
-        // Moving focus to the results closes the phone keyboard and puts
-        // keyboard and screen reader users where the results start.
-        heading?.focus();
+        showResults();
     });
 
     showAll?.addEventListener("click", () => {
         unfolded = true;
         update({ announce: "never" });
         // Keyboard and screen reader users carry on from the first video that appeared.
-        list.children[foldAt]?.querySelector("a")?.focus();
+        list.children[foldIndex]?.querySelector("a")?.focus();
     });
 
     // A narrow field gets the shorter hint, so it isn't cut off mid-word: a
@@ -280,8 +301,11 @@ export const initList = () => {
             });
         }
 
+        // Once there, the field has focus, so the address drops the #search
+        // a reload or a copied link would otherwise jump back to.
         if (window.location.hash === "#search") {
             input.focus();
+            window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
         }
     }
 

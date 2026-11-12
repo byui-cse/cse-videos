@@ -6,35 +6,55 @@
 :root {
 	--gutter: clamp(20px, 12px + 2.5vw, 48px);
 	--container: 1344px;
+	/* The header: the 36 px utility bar over the 88 px masthead
+	   (src/css/layout/header.css). */
 	--chrome: 124px;
 	/* The Video wall's docked strip: about 133 px at 1100 px and wider. */
 	--strip: 136px;
 	--state: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* Under 1100 px the strip stacks; touch screens leave out its line that
-   names the still under the pointer. */
-@media (max-width: 1099px) {
+/* A touch screen's utility bar is 44 px, for its links. */
+@media (pointer: coarse) {
 	:root {
-		--strip: 198px;
+		--chrome: 132px;
 	}
 }
 
-@media (max-width: 1099px) and (hover: none) {
-	:root {
-		--strip: 172px;
-	}
-}
-
-@media (max-width: 699px) {
+/* Phones, and screens 500 px tall or less, have the 64 px masthead. */
+@media (max-width: 699px), (max-height: 500px) {
 	:root {
 		--chrome: 100px;
-		--strip: 176px;
 	}
 }
 
-@media (max-width: 699px) and (hover: none) {
+@media (pointer: coarse) and (max-width: 699px), (pointer: coarse) and (max-height: 500px) {
 	:root {
-		--strip: 150px;
+		--chrome: 108px;
+	}
+}
+
+/* Under 1100 px the strip's heading and count share a line over the field:
+   about 138 px. */
+@media (max-width: 1099px) {
+	:root {
+		--strip: 140px;
+	}
+}
+
+/* On a phone, about 102 px, and 117 px where the count takes two lines; the
+   room covers the second line, which a search's count can need at any
+   phone width. */
+@media (max-width: 699px) {
+	:root {
+		--strip: 120px;
+	}
+}
+
+/* Under 360 px, about 136 px while a long title takes a third line beside
+   the heading. */
+@media (max-width: 359px) {
+	:root {
+		--strip: 140px;
 	}
 }

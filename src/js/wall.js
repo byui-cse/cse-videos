@@ -1,9 +1,9 @@
 /**
  * The two walls' own behaviour.
  *
- * Both walls name the still under the pointer, or under the focus, in one
- * label (the home page's card at its corner, the Video wall in its strip),
- * since the stills are too small to caption well.
+ * The Video wall names the still under the pointer, or under the focus, in
+ * its strip, since the stills are too small to caption well. (The home
+ * page's card is a still picture and has no label.)
  *
  * The Video wall page: the search lights the stills that match, echoes
  * included, and dims the rest, and keeps the search in the address so it can
@@ -18,13 +18,14 @@ export const initWallCaption = () => {
     const label = document.querySelector("[data-wall-caption]");
     const wall = document.querySelector("[data-wall]");
 
-    // Touch screens have no pointer to follow (the strip leaves the label
-    // out), so their stills keep their own captions on focus.
-    if (!label || !wall || window.matchMedia?.("(hover: none)").matches) {
+    if (!label || !wall) {
         return;
     }
 
-    // The label names the stills now, so their own captions step aside.
+    // The label names the stills now, so their own captions step aside. On
+    // a touch screen, with no pointer to follow, it names the focused still
+    // (a keyboard on a tablet, switch control), so no caption spills over
+    // the neighbours.
     wall.classList.add("has-label");
 
     const show = (target) => {

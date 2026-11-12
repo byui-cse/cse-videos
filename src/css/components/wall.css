@@ -1,12 +1,15 @@
 /**
  * The wall of reel stills, in two places: shrunk into the home page's card
- * (nine columns; six where the card is 4:3 and on a phone) and filling the
- * Video wall page (fourteen, nine, six). Each column is lifted by a different
- * part of a still so no row lines up. Pointing at a still lights it and names
- * it in one label (the card's corner, the Video wall's strip; src/js/wall.js).
- * Without JavaScript the Video wall names it on a strip along its lower edge
- * instead. A search lights the stills that match with a gold edge and dims
- * the rest.
+ * (five lifted columns; four from 800 to 1099 px; where the hero stacks, one
+ * row of whole stills, six on a tablet held upright and three on a phone)
+ * and filling the Video wall page (fourteen, nine, six). Each column is
+ * lifted by a different part of a still so no row lines up. The card is a
+ * still picture: its stills keep nearly all their colour under a light navy
+ * veil, have no links and don't answer the pointer. On the Video wall,
+ * pointing at a still clears its veil and names it in the strip
+ * (src/js/wall.js); without JavaScript it names itself on a strip along its
+ * lower edge instead. A search there lights the stills that match with a
+ * gold edge and dims the rest.
  */
 .wall {
 	--cols: 9;
@@ -47,15 +50,16 @@
 .wall--page .wall__still:nth-child(14n + 13) { --lift: 0.9; }
 .wall--page .wall__still:nth-child(14n + 14) { --lift: 0.32; }
 
-.wall--card .wall__still:nth-child(9n + 1) { --lift: 0.38; }
-.wall--card .wall__still:nth-child(9n + 2) { --lift: 0.72; }
-.wall--card .wall__still:nth-child(9n + 3) { --lift: 0.14; }
-.wall--card .wall__still:nth-child(9n + 4) { --lift: 0.55; }
-.wall--card .wall__still:nth-child(9n + 5) { --lift: 0.86; }
-.wall--card .wall__still:nth-child(9n + 6) { --lift: 0.26; }
-.wall--card .wall__still:nth-child(9n + 7) { --lift: 0.62; }
-.wall--card .wall__still:nth-child(9n + 8) { --lift: 0.08; }
-.wall--card .wall__still:nth-child(9n + 9) { --lift: 0.44; }
+.wall--card {
+	--cols: 5;
+	pointer-events: none;
+}
+
+.wall--card .wall__still:nth-child(5n + 1) { --lift: 0.34; }
+.wall--card .wall__still:nth-child(5n + 2) { --lift: 0.7; }
+.wall--card .wall__still:nth-child(5n + 3) { --lift: 0.12; }
+.wall--card .wall__still:nth-child(5n + 4) { --lift: 0.52; }
+.wall--card .wall__still:nth-child(5n + 5) { --lift: 0.84; }
 
 .wall__link {
 	position: absolute;
@@ -86,8 +90,13 @@
 	transition: opacity 180ms var(--state);
 }
 
+/* The card's stills keep nearly all their colour under a light veil. */
 .wall--card .wall__veil {
-	background: var(--veil-light);
+	background: var(--veil-card);
+}
+
+.wall--card .wall__frame img {
+	filter: brightness(var(--photo-brightness)) saturate(0.9);
 }
 
 .wall__edge {
@@ -99,10 +108,6 @@
 	transition: opacity 200ms var(--state);
 }
 
-.wall--card .wall__edge {
-	border-width: 2px;
-}
-
 .wall__caption {
 	position: absolute;
 	right: 0;
@@ -111,6 +116,11 @@
 	padding: 8px 9px 9px;
 	background: var(--band-deep);
 	color: #fff;
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	max-height: 100%;
 	font-size: 16px;
 	font-weight: 600;
 	line-height: 1.25;
@@ -119,11 +129,6 @@
 	transform: translateY(6px);
 	transition: opacity 180ms var(--state), transform 180ms var(--state);
 	pointer-events: none;
-}
-
-/* The card's stills are too small to caption; its label names them. */
-.wall--card .wall__caption {
-	display: none;
 }
 
 /* With its label running, the Video wall's own captions step aside but stay
@@ -167,8 +172,9 @@
 }
 
 /* The focus ring sits over the still, white with a navy edge, so it reads on
-   any still and apart from a match's gold edge. The transparent outline is
-   for forced-colours modes, which draw it. */
+   any still and apart from a match's gold edge. The transparent outline
+   sits on the same layer, over the picture, for forced-colours modes, which
+   draw it and leave out the shadow. */
 .wall__link::after {
 	content: "";
 	position: absolute;
@@ -179,11 +185,12 @@
 }
 
 .wall__link:focus-visible {
-	outline: 3px solid transparent;
-	outline-offset: -3px;
+	outline: none;
 }
 
 .wall__link:focus-visible::after {
+	outline: 3px solid transparent;
+	outline-offset: -3px;
 	opacity: 1;
 }
 
@@ -197,7 +204,8 @@
    cut off, nor taller than its last full row (--wall-full-*), so no column
    runs short; on a very tall screen the page goes on below the strip. The
    strip comes after the wall and stays docked at the foot of the screen
-   while the wall scrolls under it. */
+   while the wall scrolls under it; a still that takes the focus scrolls
+   clear of it. */
 .wall-stage {
 	--cols: 14;
 	--rows: var(--wall-rows-wide, 4);
@@ -226,11 +234,12 @@
 	}
 }
 
-/* A focused still scrolls clear of the docked strip. */
-:root:has(.wall-stage) {
-	scroll-padding-bottom: calc(var(--strip) + 8px);
+/* A focused still scrolls clear of the docked strip. The room is the
+   still's own, not the page's, so the strip's field, docked over it, never
+   counts as hidden and tabbing to it leaves the page where it is. */
+.wall--page .wall__link {
+	scroll-margin-block: 24px calc(var(--strip) + 8px);
 }
-
 
 .band {
 	position: sticky;
@@ -246,14 +255,16 @@
 }
 
 /* On a very short screen, or zoomed in far, the strip would cover most of
-   it; there the strip stays put at the wall's foot and the wall scrolls free. */
+   it; there it comes first, as it is in the page, so the heading and the
+   search are on the first screen, and the wall scrolls free under it. */
 @media (max-height: 480px) {
 	.band {
 		position: static;
+		order: 0;
 	}
 
-	:root:has(.wall-stage) {
-		scroll-padding-bottom: 16px;
+	.wall--page .wall__link {
+		scroll-margin-bottom: 16px;
 	}
 }
 
@@ -313,12 +324,46 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* Under 1100 px the line sits over the field, and the Video wall has nine
-   columns. */
+/* Under 1100 px the heading and the count share a line over the field,
+   and the name of a pointed or focused still takes the count's place while
+   it shows. The Video wall has nine columns. */
 @media (max-width: 1099px) {
 	.band__inner {
-		grid-template-columns: minmax(0, 1fr);
-		padding-block: 18px 20px;
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-areas: "title count" "find find";
+		align-items: last baseline;
+		column-gap: 24px;
+		row-gap: 12px;
+		padding-block: 16px 18px;
+	}
+
+	.band__lead,
+	.band__find {
+		display: contents;
+	}
+
+	.band__title {
+		grid-area: title;
+	}
+
+	.band__count,
+	.band__pointing {
+		grid-area: count;
+		justify-self: end;
+		max-width: 100%;
+		text-align: right;
+	}
+
+	.band__pointing {
+		min-height: 0;
+	}
+
+	.band:has(.band__pointing.is-shown) .band__count {
+		visibility: hidden;
+	}
+
+	.band .search {
+		grid-area: find;
 	}
 
 	.wall-stage {
@@ -338,18 +383,47 @@
 	.wall--page .wall__still:nth-child(9n + 9) { --lift: 0.44; }
 }
 
-/* Where the card is 4:3 beside the copy, and on a phone, it has six columns. */
-@media (min-width: 800px) and (max-width: 1099px), (max-width: 699px) {
+/* From 800 to 1099 px the card beside the copy has four columns. */
+@media (min-width: 800px) and (max-width: 1099px) {
+	.wall--card {
+		--cols: 4;
+	}
+
+	.wall--card .wall__still:nth-child(4n + 1) { --lift: 0.34; }
+	.wall--card .wall__still:nth-child(4n + 2) { --lift: 0.7; }
+	.wall--card .wall__still:nth-child(4n + 3) { --lift: 0.12; }
+	.wall--card .wall__still:nth-child(4n + 4) { --lift: 0.52; }
+}
+
+/* Where the hero stacks, the card is one row of whole stills, each about as
+   wide as on a phone: six on a tablet held upright, five from 620 px, four
+   from 520 px, and three on a phone. */
+@media (max-width: 799px) {
 	.wall--card {
 		--cols: 6;
 	}
 
-	.wall--card .wall__still:nth-child(6n + 1) { --lift: 0.38; }
-	.wall--card .wall__still:nth-child(6n + 2) { --lift: 0.72; }
-	.wall--card .wall__still:nth-child(6n + 3) { --lift: 0.14; }
-	.wall--card .wall__still:nth-child(6n + 4) { --lift: 0.55; }
-	.wall--card .wall__still:nth-child(6n + 5) { --lift: 0.86; }
-	.wall--card .wall__still:nth-child(6n + 6) { --lift: 0.26; }
+	.wall--card .wall__still:nth-child(n) {
+		--lift: 0;
+	}
+}
+
+@media (max-width: 699px) {
+	.wall--card {
+		--cols: 5;
+	}
+}
+
+@media (max-width: 619px) {
+	.wall--card {
+		--cols: 4;
+	}
+}
+
+@media (max-width: 519px) {
+	.wall--card {
+		--cols: 3;
+	}
 }
 
 /* On a phone the Video wall has six columns too. */
@@ -372,14 +446,40 @@
 	}
 
 	.band__inner {
-		row-gap: 10px;
-		padding-block: 14px 16px;
+		column-gap: 16px;
+		row-gap: 8px;
+		padding-block: 10px 12px;
+	}
+
+	.band__title {
+		font-size: 21px;
+	}
+
+	/* Two lines at most, so a long search can't grow the strip; the full
+	   count is also read out by the page's status line. The name of a
+	   pointed or focused still takes the same two lines (three under
+	   360 px), so a long title shows whole where the still's own caption
+	   steps aside. */
+	.band__count,
+	.band__pointing {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-height: 1.2;
+		white-space: normal;
+		text-wrap: balance;
+	}
+
+	.band .search__input {
+		height: 48px;
 	}
 }
 
-/* Touch screens have no pointer to name a still under. */
-@media (hover: none) {
+/* Under 360 px the longest titles need a third line beside the heading; the
+   strip's room grows to match (src/css/tokens/space.css). */
+@media (max-width: 359px) {
 	.band__pointing {
-		display: none;
+		-webkit-line-clamp: 3;
 	}
 }

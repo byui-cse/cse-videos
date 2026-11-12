@@ -9,6 +9,7 @@ import {
     listUrl,
     measuredHeight,
     onlySource,
+    orderText,
     playerState,
     playerUrl,
     plural,
@@ -48,6 +49,12 @@ describe("list address", () => {
         assert.equal(countText(36, 36, "", "36 videos, 25 minutes in all"), "36 videos, 25 minutes in all");
         assert.equal(countText(5, 36, "port", "36 videos, 25 minutes in all"), "5 of 36 videos match “port”");
         assert.equal(plural(2, "tag"), "2 tags");
+    });
+
+    it("says the new order before the count", () => {
+        assert.equal(orderText("oldest", "36 videos, 25 minutes in all"), "Oldest first, 36 videos, 25 minutes in all");
+        assert.equal(orderText("newest", "5 of 36 videos match “port”"), "Newest first, 5 of 36 videos match “port”");
+        assert.equal(orderText("oldest", countText(10, 10, "")), "Oldest first, 10 videos");
     });
 });
 

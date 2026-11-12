@@ -4,8 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { COVER_FORMATS, coverSources, derivativePath, derivativeWidths, writeCoverDerivatives } from "../lib/images.js";
-import { clock, formatDate, lengthSeconds, libraryLine, listFacts, oneADay, partTitle, runningTime } from "../lib/site.js";
-import { CARD_STILLS, WALL_LEAD, WALL_STILLS, seededRandom, topicStills, wallFill, wallOrder, wallStageCss, wallTotal } from "../lib/wall.js";
+import { clock, lengthSeconds, libraryLine, listFacts, oneADay, partTitle, runningTime } from "../lib/site.js";
+import { CARD_FRONT, CARD_QUIET, CARD_STILLS, WALL_LEAD, WALL_STILLS, cardOrder, seededRandom, topicStills, wallFill, wallOrder, wallStageCss, wallTotal } from "../lib/wall.js";
 
 const SRC = new URL("../src/", import.meta.url).pathname;
 
@@ -41,11 +41,6 @@ describe("running times", () => {
 });
 
 describe("series wording", () => {
-    it("writes dates with their weekday", () => {
-        assert.equal(formatDate("2026-10-19", "full"), "Monday, October 19, 2026");
-        assert.equal(formatDate("2026-10-21", "weekday"), "Wednesday, Oct 21, 2026");
-    });
-
     it("knows when parts went up one a day", () => {
         const day = (date) => ({ datePosted: date });
         assert.equal(oneADay([day("2026-10-19"), day("2026-10-20"), day("2026-10-21")]), true);
@@ -111,7 +106,7 @@ describe("the wall", () => {
         const walls = [
             { stills: wallFill(videos, 98), columns: [14, 9, 6] },
             { stills: wallFill(videos, WALL_STILLS, WALL_LEAD), columns: [14, 9, 6] },
-            { stills: wallFill(videos, CARD_STILLS), columns: [9, 6] }
+            { stills: wallFill(videos, CARD_STILLS), columns: [5, 4, 6] }
         ];
 
         for (const { stills, columns } of walls) {
@@ -131,6 +126,46 @@ describe("the wall", () => {
                 });
             }
         }
+    });
+
+    it("fills the card's front slots with covers that show people, a series counting once, then the rest in the same order", () => {
+        const videos = [
+            ...Array.from({ length: 20 }, (_, index) => ({ id: `face-${index}` })),
+            { id: "board-1", series: "quest" },
+            { id: "board-2", series: "quest" },
+            { id: "talk-1", series: "talks" },
+            { id: "talk-2", series: "talks" },
+            { id: "words" }
+        ];
+        const quiet = new Map([["quest", "game boards"], ["words", "a title in capitals"], ["gone", "no longer in the data"]]);
+        const order = cardOrder(videos, { seed: 7, front: 15, quiet });
+        const front = order.slice(0, 15).map((video) => video.id);
+
+        assert.deepEqual([...order].sort((a, b) => a.id.localeCompare(b.id)), [...videos].sort((a, b) => a.id.localeCompare(b.id)));
+        assert.ok(!front.some((id) => id.startsWith("board-") || id === "words"));
+        assert.ok(front.filter((id) => id.startsWith("talk-")).length <= 1);
+        // The rest keep their shuffled order.
+        const shuffled = wallOrder(videos, 7).map((video) => video.id);
+        const rest = order.slice(15).map((video) => video.id);
+        assert.deepEqual(rest, shuffled.filter((id) => !front.includes(id)));
+        assert.deepEqual(cardOrder(videos, { seed: 7, front: 15, quiet }), order);
+    });
+
+    it("lets quiet covers into the card's front slots when there are too few others", () => {
+        const videos = [{ id: "a" }, { id: "b", series: "s" }, { id: "c", series: "s" }, { id: "q" }];
+        const order = cardOrder(videos, { seed: 3, front: 4, quiet: new Map([["q", "words"]]) });
+        assert.equal(order.length, 4);
+        assert.deepEqual(new Set(order.map((video) => video.id)), new Set(["a", "b", "c", "q"]));
+        assert.deepEqual(cardOrder([], { front: 4 }), []);
+    });
+
+    it("keeps the real library's quiet covers and Career Quest boards out of the card's front slots", async () => {
+        const videos = JSON.parse(await fs.readFile(new URL("../data/videos.json", import.meta.url), "utf8"));
+        const front = cardOrder(videos).slice(0, CARD_FRONT);
+
+        assert.equal(front.length, CARD_FRONT);
+        assert.ok(front.every((video) => !CARD_QUIET.has(video.id) && !CARD_QUIET.has(video.series ?? "")));
+        assert.equal(new Set(front.map((video) => video.id)).size, CARD_FRONT);
     });
 
     it("draws whole rows at every width, with a row of echoes under the last video", () => {

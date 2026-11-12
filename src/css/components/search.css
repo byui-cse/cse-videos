@@ -35,6 +35,13 @@
 	opacity: 1;
 }
 
+/* The browser's clear button keeps its room even while the field is empty,
+   which cut the hint short on a narrow phone; it shows once there is
+   something to clear. */
+.search__input:placeholder-shown::-webkit-search-cancel-button {
+	display: none;
+}
+
 @media (max-width: 1099px) {
 	.search__input {
 		height: 56px;

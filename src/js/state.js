@@ -75,6 +75,15 @@ export const countText = (shown, total, query, rest) => {
 };
 
 /**
+ * What a screen reader hears when the order changes: the order first, then
+ * the count, so a count that stayed the same still says what happened.
+ * "Oldest first, 36 videos".
+ * @param {"newest" | "oldest"} order
+ * @param {string} count
+ */
+export const orderText = (order, count) => `${order === "oldest" ? "Oldest" : "Newest"} first, ${count}`;
+
+/**
  * True for "youtube" or "instagram".
  * @param {unknown} value
  * @returns {value is "youtube" | "instagram"}

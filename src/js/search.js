@@ -17,6 +17,7 @@ export const normalize = (text) => String(text).normalize("NFKD").replace(/\p{M}
  * - apostrophes are dropped, so "don't" and "dont" are the same word;
  * - + and # stay inside a word, so "c++" and "c#" don't shrink to "c";
  * - a leading # goes, so "#portfolio" is "portfolio";
+ * - dots inside acronyms go, so "a.i." is "ai";
  * - anything else that isn't a letter or digit separates words, so
  *   "job-search" is "job" and "search".
  * @param {string} text
@@ -24,6 +25,7 @@ export const normalize = (text) => String(text).normalize("NFKD").replace(/\p{M}
  */
 export const words = (text) => [...new Set(normalize(text)
     .replace(/['‘’ʼ]/g, "")
+    .replace(/\b(?:\p{L}\.)+\p{L}\.?(?!\p{L})/gu, (acronym) => acronym.replaceAll(".", ""))
     .split(/[^\p{L}\p{N}+#]+/u)
     .map((word) => word.replace(/^#+/, ""))
     .filter(Boolean))];
@@ -62,15 +64,23 @@ const stems = (term) => {
     return candidates.filter((candidate) => candidate.length >= 3);
 };
 
+const STOP_WORDS = new Set(["video", "videos", "reel", "reels", "the", "a", "an", "of", "for", "and", "to", "on", "in"]);
+
 /**
- * True when every word typed, or one of its light stems, starts some word in the video.
+ * True when every useful query word matches a video word, allowing light
+ * stems on either side. Filler words and lone letters are dropped when
+ * something else was typed; lone digits stay, so "part 3" finds Part 3.
  * An empty search matches everything.
  * @param {string[]} videoWords
  * @param {string} query
  * @returns {boolean}
  */
-export const matches = (videoWords, query) =>
-    words(query).every((term) => {
-        const candidates = [term, ...stems(term)];
-        return videoWords.some((word) => candidates.some((candidate) => word.startsWith(candidate)));
-    });
+export const matches = (videoWords, query) => {
+    const typed = words(query);
+    const useful = typed.filter((term) => !/^\p{L}$/u.test(term) && !STOP_WORDS.has(term));
+    // The video's words and their stems, worked out once for every term.
+    const forms = videoWords.flatMap((word) => [word, ...stems(word)]);
+
+    return (useful.length ? useful : typed).every((term) =>
+        [term, ...stems(term)].some((candidate) => forms.some((form) => form.startsWith(candidate))));
+};

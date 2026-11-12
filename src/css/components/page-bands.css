@@ -1,34 +1,18 @@
 /**
- * The navy heads of the other pages: the topics page's band, a topic's short
- * head (its name, count, running time and Copy link), and the missing page.
+ * The navy heads of the other pages, one head in three uses: the topics
+ * page's (its title and count), a topic's (its name, count, running time
+ * and links), and the missing page's (what happened, a search and a way
+ * home). Each is in two halves on the page's columns: the title left, what
+ * goes with it from the middle line, the same line the index and the topic
+ * directory share. A topic's list and the missing page's topics follow on
+ * paper.
  */
 .page-band,
 .tag-hero,
 .missing {
+	padding: var(--section-s) 0;
 	background: var(--band-deep);
 	color: #fff;
-}
-
-.page-band {
-	padding: 80px 0 64px;
-}
-
-.page-band__title {
-	font-family: var(--display);
-	font-size: var(--step-6);
-	font-weight: 800;
-	line-height: 1;
-	letter-spacing: -0.03em;
-}
-
-.page-band__meta {
-	margin-top: 16px;
-	color: var(--on-band-muted);
-	font-size: var(--step-1);
-}
-
-.tag-hero {
-	padding: 64px 0 48px;
 }
 
 .page-band :focus-visible,
@@ -37,12 +21,43 @@
 	outline-color: var(--focus-on-band);
 }
 
-.tag-hero__inner {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	justify-content: space-between;
-	gap: 24px 48px;
+.page-band__inner,
+.tag-hero__inner,
+.missing__inner {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: end;
+	gap: 24px;
+}
+
+/* The title's baseline and the count's last line share a line. */
+.page-band__inner {
+	align-items: last baseline;
+}
+
+/* The search and the way home start level with the title. */
+.missing__inner {
+	align-items: start;
+}
+
+.page-band__title,
+.tag-hero__title,
+.missing__title {
+	font-family: var(--display);
+	font-size: var(--h1);
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: -0.025em;
+}
+
+.page-band__meta,
+.tag-hero__count,
+.missing__lede {
+	max-width: 40ch;
+	color: var(--on-band-muted);
+	font-size: var(--step-1);
+	line-height: 1.45;
+	font-variant-numeric: tabular-nums;
 }
 
 .tag-hero__crumb {
@@ -51,54 +66,62 @@
 }
 
 .tag-hero__crumb a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
 	color: var(--on-band-muted);
-}
-
-.tag-hero__title {
-	font-family: var(--display);
-	font-size: var(--h1);
-	font-weight: 800;
-	line-height: 1;
-	letter-spacing: -0.025em;
 }
 
 .tag-hero__facts {
+	display: grid;
+	justify-items: start;
+	gap: 16px;
+}
+
+.tag-hero__actions {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	gap: 16px 24px;
+	gap: 12px;
 }
 
-.tag-hero__count {
-	color: var(--on-band-muted);
-	font-size: var(--step-1);
-	font-variant-numeric: tabular-nums;
+/* A series' parts take a column each, so no column is left empty. */
+.index--series .grid {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.missing {
-	padding: 128px 0 160px;
+.missing__lede {
+	margin-top: 24px;
 }
 
-.missing__line {
-	max-width: 22ch;
-	margin-bottom: 32px;
-	font-family: var(--display);
-	font-size: var(--step-4);
-	font-weight: 800;
-	line-height: 1.05;
-	letter-spacing: -0.02em;
+.missing__find {
+	display: grid;
+	gap: 16px;
+	justify-items: start;
+}
+
+.missing__find .search {
+	width: 100%;
+}
+
+@media (max-width: 1099px) {
+	.index--series .grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }
 
 @media (max-width: 699px) {
-	.page-band {
-		padding: 56px 0 48px;
+	.page-band__inner,
+	.tag-hero__inner,
+	.missing__inner {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 20px;
 	}
 
-	.tag-hero {
-		padding: 40px 0 32px;
+	.missing__lede {
+		margin-top: 16px;
 	}
 
-	.missing {
-		padding: 88px 0 112px;
+	.index--series .grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }

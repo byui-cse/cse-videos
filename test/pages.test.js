@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage, videoWallPage } from "../lib/render.js";
-import { CARD_STILLS, WALL_LEAD, WALL_STILLS } from "../lib/wall.js";
+import { CARD_FRONT, CARD_STILLS, WALL_LEAD, WALL_STILLS } from "../lib/wall.js";
 import { build, SRC, siteUrlFrom } from "../scripts/build.js";
 
 const VIDEOS = [
@@ -185,20 +185,29 @@ describe("home page", () => {
         assert.ok(!page.includes("<older>"));
     });
 
-    it("hides the search form until JavaScript can run it", async () => {
+    it("hides the search form, and the line about it, until JavaScript can run it", async () => {
         const page = await read("index.html");
         assert.match(page, /<form class="search hero__search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
+        assert.match(page, /<p class="hero__lede" data-needs-js hidden>/);
         assert.match(page, /name="q"/);
     });
 
-    it("puts the headline, the search and the counts beside a card holding the wall", async () => {
+    it("puts the headline, a line on the search, the search and the counts beside a card holding the wall", async () => {
         const page = await read("index.html");
         const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
-        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>/);
+        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>\s*<p class="hero__lede" data-needs-js hidden>Search by topic, title or caption, then copy a link to send\.<\/p>\s*<form class="search hero__search"/);
         assert.match(hero, /<ul class="hero__facts">\s*<li data-results>3 videos<\/li>\s*<li><a href="\.\/tags\/">3 topics<\/a><\/li>\s*<\/ul>/);
-        assert.match(hero, /<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
-        assert.match(hero, /<p class="hero__pointing" aria-hidden="true" data-wall-caption><\/p>/);
-        assert.match(hero, /<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"/);
+        assert.match(hero, /<div class="hero__media">\s*<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
+    });
+
+    it("puts the way to the video wall under the card, off its stills, with no label naming a still", async () => {
+        const page = await read("index.html");
+        const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
+        const card = hero.slice(hero.indexOf('<div class="hero__card">'), hero.indexOf('<div class="hero__under">'));
+        assert.ok(!card.includes("hero__open"));
+        assert.match(card, /<\/ul>\s*<\/div>\s*$/);
+        assert.ok(!page.includes("data-wall-caption"));
+        assert.match(hero, /<div class="hero__under">\s*<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"[^>]*aria-hidden="true"/);
     });
 
     it("links home with ./ so the site name and All videos link clear a search", async () => {
@@ -320,12 +329,30 @@ describe("series on other pages", () => {
         const boards = [...section.matchAll(/class="board__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
 
         assert.deepEqual(boards, ["quest-part-1", "quest-part-2", "quest-part-3"]);
-        assert.match(section, /3 parts, posted one a day from <time datetime="2026-10-21">Wednesday, October 21, 2026<\/time> to <time datetime="2026-10-23">Friday, October 23, 2026<\/time>\. Watch them in order: 1 minute 30 seconds in all\./);
+        assert.match(section, /3 parts, posted one a day from <time datetime="2026-10-21">October 21<\/time>&nbsp;to&nbsp;<time datetime="2026-10-23">23, 2026<\/time>\. Watch them in order: 1 minute 30 seconds in all\./);
         assert.match(section, /<span class="board__title">Step 1<\/span>/);
+        assert.match(section, /<span class="board__meta"><time datetime="2026-10-21">Oct 21, 2026<\/time><span aria-hidden="true"> · <\/span><time datetime="PT30S">/);
         assert.ok(!section.includes("That is all"));
-        assert.match(section, /<p class="quest__end"><a href="\.\/tags\/quest\/">Quest on its own page<\/a><\/p>/);
+        // The series' own page is the last of its actions.
+        assert.match(section, /<p class="quest__actions">.*<a class="quest__page" href="\.\/tags\/quest\/">Quest on its own page<\/a><\/p>/);
+        assert.ok(!section.includes("quest__end"));
         assert.match(page, /<a class="site-nav__link" href="#quest">Quest<\/a>/);
         assert.match(page, /<li data-results>5 videos, 2 minutes in all<\/li>/);
+    });
+
+    it("say when a series was posted with its year once, across months and years", () => {
+        const spanOf = (dates) => {
+            const parts = dates.map((date, index) => ({ ...part(index + 1), datePosted: date }));
+            const page = homePage({ ...site, videos: [...parts, other] });
+            return page.match(/<p class="quest__lede">(.*?)<\/p>/)[1];
+        };
+
+        assert.match(spanOf(["2026-09-30", "2026-10-01"]), /posted one a day from <time datetime="2026-09-30">September 30<\/time> to&nbsp;<time datetime="2026-10-01">October 1, 2026<\/time>\./);
+        assert.match(spanOf(["2026-12-20", "2027-01-05"]), /posted from <time datetime="2026-12-20">December 20, 2026<\/time> to&nbsp;<time datetime="2027-01-05">January 5, 2027<\/time>\./);
+        assert.match(spanOf(["2026-10-02"]), /1 part, posted <time datetime="2026-10-02">October 2, 2026<\/time>\./);
+        // Parts posted the same day have one date, never "October 19 to 19".
+        assert.match(spanOf(["2026-10-19", "2026-10-19"]), /2 parts, posted <time datetime="2026-10-19">October 19, 2026<\/time>\./);
+        assert.match(spanOf(["2026-10-19", "2026-10-19", "2026-10-20"]), /3 parts, posted from <time datetime="2026-10-19">October 19<\/time>&nbsp;to&nbsp;<time datetime="2026-10-20">20, 2026<\/time>\./);
     });
 
     it("introduce Career Quest in words, the parts counted from the data", () => {
@@ -334,17 +361,17 @@ describe("series on other pages", () => {
         assert.match(page, /<p class="quest__lede">A job search told as a game, in three parts, posted one a day from /);
     });
 
-    it("fold the index on phones after twelve videos, with a button for the rest", () => {
+    it("fold the index on phones after thirteen videos, the lead tile and six full rows, with a button for the rest", () => {
         const many = Array.from({ length: 14 }, (_, index) => ({ ...lone, id: `v${index}`, title: `Video ${index}` }));
         const page = homePage({ ...site, videos: many, covers: new Map() });
-        assert.match(page, /data-phone-fold="12"/);
+        assert.match(page, /data-phone-fold="13"/);
         assert.match(page, /<p class="index__more" data-show-all-row hidden><button class="button button--light" type="button" data-show-all>Show all 14 videos<\/button><\/p>/);
         assert.ok(!homePage(site).includes("data-show-all"));
     });
 
-    it("put a Copy link for the page beside its address in the facts", () => {
+    it("put the page's address in the facts, in pieces that break after a slash", () => {
         const page = videoPage({ ...site, siteUrl: "https://example.com/" }, lone);
-        assert.match(page, /<dt>Link to send<\/dt><dd class="docket__send"><span class="docket__link" data-page-url>https:\/\/example\.com\/videos\/lone\/<\/span> <button class="text-button" type="button" data-copy="\.\/" data-copy-name="Lone" data-needs-js hidden>Copy link<span class="visually-hidden" data-copy-suffix> to Lone<\/span><\/button><\/dd>/);
+        assert.match(page, /<dt>Link to send<\/dt><dd><span class="docket__link" data-page-url><span>https:\/\/example\.com\/<\/span><span>videos\/<\/span><span>lone\/<\/span><\/span><\/dd>/);
     });
 
     it("leave the series section and its links out when there is no series", () => {
@@ -389,23 +416,35 @@ describe("series on other pages", () => {
             assert.match(picture, /^<source type="image\/avif" srcset="[^"]+-240\.avif 240w, [^"]+-360\.avif 360w, [^"]+-480\.avif 480w" sizes="[^"]+"><source type="image\/webp" srcset="[^"]+" sizes="[^"]+"><img[^>]* src="\.\/covers\/[\w-]+\.jpg"/);
         }
 
-        assert.match(page, /<link rel="preload" as="image" type="image\/avif" imagesrcset="[^"]+" imagesizes="[^"]+" fetchpriority="high">/);
     });
 
-    it("put every video on the card's wall once, then echoes to fill it, as links, in a fixed shuffle", () => {
+    it("load the card's front stills at once, preload none and hurry none, and leave the rest until a search brings them forward", () => {
+        const many = Array.from({ length: CARD_FRONT + 4 }, (_, index) => ({ ...lone, id: `v${index}`, title: `Video ${index}` }));
+        const covers = new Map(many.map((video) => [video.id, { width: 480, height: 750 }]));
+        const page = homePage({ ...site, videos: many, covers });
+        const wall = page.slice(page.indexOf("data-wall"), page.indexOf("</ul>", page.indexOf("data-wall")));
+        const loading = [...wall.matchAll(/<img [^>]*loading="(\w+)"/g)].map((match) => match[1]);
+
+        assert.deepEqual(loading, [...Array(CARD_FRONT).fill("eager"), ...Array(loading.length - CARD_FRONT).fill("lazy")]);
+        assert.ok(!page.includes('rel="preload" as="image"'));
+        assert.ok(!wall.includes("fetchpriority"));
+    });
+
+    it("puts every video on the card once, then echoes to fill it, as plain stills in a fixed shuffle", () => {
         const page = homePage(site);
         const wall = page.slice(page.indexOf("data-wall"), page.indexOf("</ul>", page.indexOf("data-wall")));
-        const own = [...wall.matchAll(/<li class="wall__still" data-id="[\w-]+"><a class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
-        const all = [...wall.matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+        const own = [...wall.matchAll(/<li class="wall__still" data-id="([\w-]+)">/g)].map((match) => match[1]);
+        const all = [...wall.matchAll(/<li class="wall__still(?: wall__still--echo)?" data-id="([\w-]+)">/g)].map((match) => match[1]);
 
         assert.deepEqual([...own].sort(), videos.map((video) => video.id).sort());
         assert.equal(all.length, CARD_STILLS);
         assert.deepEqual(all.slice(0, videos.length), own);
-        assert.deepEqual(all, [...homePage(site).matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]));
-        assert.match(wall, /<span class="wall__caption">Quest, Part 1: Step 1<\/span>/);
-        // The index has every video for the keyboard; the wall is for the pointer.
+        assert.deepEqual(all, [...homePage(site).matchAll(/<li class="wall__still(?: wall__still--echo)?" data-id="([\w-]+)">/g)].map((match) => match[1]));
+        // The card is a still picture: no links, no captions, hidden from
+        // screen readers. The index has every video.
         assert.match(page, /<ul class="wall wall--card" aria-hidden="true" data-wall>/);
-        assert.equal(wall.match(/class="wall__link" href="[^"]+" tabindex="-1"/g).length, CARD_STILLS);
+        assert.ok(!wall.includes("<a "));
+        assert.ok(!wall.includes("wall__caption"));
         assert.ok(!page.includes("Skip past the wall"));
     });
 });
@@ -544,7 +583,7 @@ describe("video pages", () => {
 
     it("show the date, length, tags, credits, and stats", async () => {
         const page = await read("videos/sample-short/index.html");
-        assert.match(page, /<time datetime="2026-10-19">Monday, October 19, 2026<\/time>/);
+        assert.match(page, /<time datetime="2026-10-19">October 19, 2026<\/time>/);
         assert.match(page, /<time datetime="PT1M5S"><span aria-hidden="true">1:05<\/span><span class="visually-hidden">1 minute 5 seconds<\/span><\/time>/);
         assert.match(page, /href="\.\.\/\.\.\/tags\/career-quest\/">Career Quest</);
         assert.match(page, /<li>Music from the Instagram library<\/li>/);
@@ -653,6 +692,29 @@ describe("video wall page", () => {
             assert.match(page, new RegExp(`<a class="site-nav__link" href="${href}"><span class="site-nav__wide">Video wall<\\/span>`), file);
             assert.match(page, new RegExp(`<li><a href="${href}">Video wall<\\/a><\\/li>`), file);
         }
+    });
+
+    it("loads the first row at its widest at once, hurries the first two rows on a phone, loads each video's own still as its echo there, and leaves the rest lazy", () => {
+        const many = Array.from({ length: 36 }, (_, index) => ({ id: `v${index}`, title: `Video ${index}`, instagram: `https://www.instagram.com/reel/V${index}/`, datePosted: "2026-11-01", tags: ["x"] }));
+        const page = videoWallPage({ videos: many, tags: [], names: {}, covers: new Map(many.map((video) => [video.id, { width: 480, height: 750 }])), siteUrl: null });
+        const start = page.indexOf("data-wall-page");
+        const stills = [...page.slice(start, page.indexOf("</ul>", start)).matchAll(/<li class="wall__still( wall__still--echo)?" data-id="([\w-]+)".*?(<img [^>]*>)/g)]
+            .map(([, echo, id, img]) => ({ echo: Boolean(echo), id, img }));
+        // The videos on the first row at the widest, and whether each is hurried.
+        const lead = new Map(stills.slice(0, WALL_LEAD).map(({ id }, slot) => [id, slot < 12]));
+
+        assert.equal(stills.length, WALL_STILLS);
+        assert.equal(lead.size, WALL_LEAD);
+        stills.forEach(({ echo, id, img }, slot) => {
+            const early = slot < WALL_LEAD || (!echo && lead.has(id));
+            assert.match(img, early ? /loading="eager"/ : /loading="lazy"/, `${slot}`);
+            assert.equal(img.includes('fetchpriority="high"'), slot < WALL_LEAD ? slot < 12 : early && lead.get(id), `${slot}`);
+        });
+        // The own stills share their echoes' pictures, so nothing more loads at once.
+        const files = new Set(stills.filter(({ img }) => img.includes('loading="eager"')).map(({ img }) => img.match(/src="([^"]+)"/)[1]));
+        assert.equal(files.size, WALL_LEAD);
+        assert.equal(stills.filter(({ echo, img }) => !echo && img.includes('loading="eager"')).length, WALL_LEAD);
+        assert.ok(!page.includes('rel="preload" as="image"'));
     });
 
     it("fills a small library's wall with echoes, and draws an empty library without any", () => {

@@ -18,3 +18,45 @@
 	font-style: normal;
 	font-display: swap;
 }
+
+/*
+ * Until the web fonts arrive, text is set in the computer's own Arial (or
+ * Liberation Sans or Arimo, which share its metrics), scaled to the web
+ * font's average width over the site's own text and given its
+ * ascent and descent, so lines break in the same places and nothing moves
+ * when the web font swaps in. Regular and bold are separate faces, so the
+ * browser never thickens Arial on its own. Measured against the web fonts at
+ * 400, 600 and 800: Sofia Sans is 94.6 percent of Arial's width, at 600 89.6
+ * percent of Arial Bold's; the semi condensed cut at 800 is 87.5 percent of
+ * Arial Bold's. Both web fonts have an ascent of 0.9 em and a descent of
+ * 0.3 em.
+ */
+@font-face {
+	font-family: "Sofia Sans Fallback";
+	src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("LiberationSans"), local("Arimo");
+	font-weight: 1 549;
+	size-adjust: 94.6%;
+	ascent-override: 95.1%;
+	descent-override: 31.7%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Sofia Sans Fallback";
+	src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold");
+	font-weight: 550 1000;
+	size-adjust: 89.6%;
+	ascent-override: 100.4%;
+	descent-override: 33.5%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Sofia Sans Semi Condensed Fallback";
+	src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"), local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold");
+	font-weight: 1 1000;
+	size-adjust: 87.5%;
+	ascent-override: 102.9%;
+	descent-override: 34.3%;
+	line-gap-override: 0%;
+}

@@ -109,6 +109,40 @@ describe("search", () => {
         assert.equal(matches(words("use"), "uses"), true);
     });
 
+    it("matches singular queries against plural video words", () => {
+        assert.equal(matches(words("Student stories"), "story"), true);
+        assert.equal(matches(words("Local companies"), "company"), true);
+        assert.equal(matches(words("classes boxes jobs"), "class box job"), true);
+        assert.equal(matches(words("storm"), "store"), false);
+    });
+
+    it("ignores filler words when another query term remains", () => {
+        assert.equal(matches(words("Games and projects"), "video games"), true);
+        assert.equal(matches(words("Games and projects"), "the reels of games"), true);
+        assert.equal(matches(words("Games and projects"), "video interviews"), false);
+        assert.equal(matches(words("games"), "a game"), true);
+    });
+
+    it("searches the typed terms when all would be ignored", () => {
+        assert.equal(matches(words("A video"), "video"), true);
+        assert.equal(matches(words("games"), "video"), false);
+        assert.equal(matches(words("AI"), "a"), true);
+        assert.equal(matches(words("games"), "a"), false);
+    });
+
+    it("keeps lone digits, so a part number narrows the search", () => {
+        assert.equal(matches(words("Career Quest, Part 3: Nobody gets through alone"), "quest part 3"), true);
+        assert.equal(matches(words("Career Quest, Part 4: Your resume is your shield"), "quest part 3"), false);
+        assert.equal(matches(words("Career Quest, Part 4: Your resume is your shield"), "a quest"), true);
+    });
+
+    it("joins dotted acronyms before matching", () => {
+        assert.deepEqual(words("A.I. and U.S."), ["ai", "and", "us"]);
+        assert.equal(matches(words("ai tools"), "a.i."), true);
+        assert.equal(matches(words("internships in the us"), "u.s."), true);
+        assert.equal(matches(words("a new idea"), "a.i."), false);
+    });
+
     it("does not shorten terms below three characters", () => {
         assert.equal(matches(words("air"), "ai"), true);
         assert.equal(matches(words("main"), "ai"), false);

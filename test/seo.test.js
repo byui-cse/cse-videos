@@ -1,6 +1,34 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { breadcrumbs, jsonLd, robotsTxt, sitemapXml, videoObject, websiteSchema } from "../lib/seo.js";
+import { homePage, notFoundPage, videoPage } from "../lib/render.js";
+
+const pageSite = {
+    videos: [{ id: "example", title: "Example", datePosted: "2026-11-01", tags: [], youtube: "https://youtu.be/dQw4w9WgXcQ" }],
+    tags: [],
+    names: {},
+    covers: new Map([["example", { width: 480, height: 750 }]]),
+    siteUrl: "https://example.com/cse-videos/"
+};
+
+describe("page sharing metadata", () => {
+    it("uses the share image on home and keeps a video's cover", () => {
+        const home = homePage(pageSite);
+        const video = videoPage(pageSite, pageSite.videos[0]);
+
+        assert.match(home, /<meta property="og:image" content="https:\/\/example\.com\/cse-videos\/share\.jpg">/);
+        assert.match(home, /<meta property="og:image:alt" content="CSE Videos">/);
+        assert.match(home, /<meta name="twitter:card" content="summary_large_image">/);
+        assert.match(video, /<meta property="og:image" content="https:\/\/example\.com\/cse-videos\/covers\/example\.jpg">/);
+    });
+
+    it("does not assign a canonical address or structured data to missing pages", () => {
+        const page = notFoundPage(pageSite);
+
+        assert.match(page, /<meta name="robots" content="noindex">/);
+        assert.doesNotMatch(page, /rel="canonical"|property="og:url"|application\/ld\+json/);
+    });
+});
 
 describe("structured data", () => {
     it("escapes script-closing text and JSON line separators without changing the parsed value", () => {

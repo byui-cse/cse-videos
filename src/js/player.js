@@ -38,6 +38,30 @@ const isolate = (element) => {
 };
 
 /**
+ * The address without a ?source= that does nothing on this video: a player
+ * it doesn't have, an unknown value, or any value when it has only one
+ * player. Null when there is nothing to take out. A link copied from the
+ * page then carries only what plays.
+ * @param {string} href
+ * @param {string[]} available the players this video has
+ * @returns {string | null}
+ */
+export const withoutUnusableSource = (href, available) => {
+    const url = new URL(href);
+
+    if (!url.searchParams.has("source")) {
+        return null;
+    }
+
+    if (available.length > 1 && available.includes(url.searchParams.get("source") ?? "")) {
+        return null;
+    }
+
+    url.searchParams.delete("source");
+    return url.href;
+};
+
+/**
  * Starts the player on a video page. Returns a hook for a preference chosen
  * elsewhere on the page, or null on pages without a player.
  * @returns {{ prefer: (source: string) => void } | null}
@@ -60,6 +84,7 @@ export const initPlayer = () => {
     const sourceButtons = [...player.querySelectorAll("[data-source-button]")];
     const expandButton = /** @type {HTMLButtonElement | null} */ (player.querySelector("[data-expand]"));
     const onlyLine = /** @type {HTMLElement | null} */ (player.querySelector("[data-only-on]"));
+    const bar = player.querySelector(".player__bar");
     const frame = iframe.parentElement;
     let status = /** @type {HTMLParagraphElement | null} */ (null);
     let note = /** @type {HTMLParagraphElement | null} */ (null);
@@ -73,7 +98,7 @@ export const initPlayer = () => {
         const state = playerState({ source, elapsedMs: performance.now() - shownAt, sawInstagramMessage });
         player.dataset.state = state;
 
-        if (state === "slow" && !status && frame) {
+        if (state === "slow" && !status && bar) {
             status = document.createElement("p");
             status.className = "player__status";
             status.setAttribute("data-player-status", "");
@@ -86,9 +111,9 @@ export const initPlayer = () => {
             link.href = postUrl.href;
             link.textContent = "Watch on Instagram";
             status.append(link);
-            // Before the frame, which the controls sit above, so the message
-            // is between them and on the first screen.
-            frame.before(status);
+            // On its own line in the bar, with the controls: above the frame
+            // on a phone, beside it from 700 px, on the first screen either way.
+            bar.append(status);
         }
 
         if (status) {
@@ -142,9 +167,9 @@ export const initPlayer = () => {
     };
 
     /**
-     * "Only on Instagram" above the video when the viewer prefers the player
-     * this video doesn't have, said to screen readers too, so they know why
-     * it wasn't used.
+     * "Only on Instagram" with the player's controls when the viewer prefers
+     * the player this video doesn't have, said to screen readers too, so they
+     * know why it wasn't used.
      * @param {string | null} preferred
      */
     const updateNote = (preferred) => {
@@ -181,6 +206,14 @@ export const initPlayer = () => {
 
     show(chosen ?? defaultSource, false);
     updateNote(preferred);
+
+    // A ?source= this video can't use stays out of the address, so Copy link
+    // never sends it on.
+    const cleaned = withoutUnusableSource(window.location.href, available);
+
+    if (cleaned) {
+        window.history.replaceState(window.history.state, "", cleaned);
+    }
 
     for (const button of sourceButtons) {
         button.addEventListener("click", () => {
@@ -240,7 +273,7 @@ export const initPlayer = () => {
     };
 
     // The player can load and post before this module runs. A script in the
-    // page's head (lib/render.js) keeps those messages; replay them first.
+    // page's head (lib/pages/video.js) keeps those messages; replay them first.
     for (const { data, source } of window.instagramMessages ?? []) {
         receive(data, source);
     }
@@ -256,9 +289,16 @@ export const initPlayer = () => {
     }
 
     let restore = null;
+    const holder = player.parentElement;
 
     /** @param {boolean} expanded */
     const setExpanded = (expanded) => {
+        // The band keeps the height it had with the player in it, so nothing
+        // behind the open player moves and the page is where it was on Close.
+        if (holder) {
+            holder.style.minHeight = expanded ? `${holder.getBoundingClientRect().height}px` : "";
+        }
+
         player.classList.toggle("is-expanded", expanded);
         document.documentElement.classList.toggle("has-expanded-player", expanded);
         expandButton.textContent = expanded ? "Close" : "Expand";
@@ -276,7 +316,13 @@ export const initPlayer = () => {
             restore = null;
         }
 
-        expandButton.focus();
+        // Back to Expand, or to the video when the window has narrowed to a
+        // phone's while the player was open and Expand is no longer shown.
+        if (expanded || expandButton.getClientRects().length > 0) {
+            expandButton.focus();
+        } else {
+            iframe.focus();
+        }
     };
 
     const isExpanded = () => player.classList.contains("is-expanded");
