@@ -1,7 +1,8 @@
 /**
  * The wall of reel stills, in two places: shrunk into the home page's card
  * (five lifted columns; four from 800 to 1099 px; where the hero stacks, one
- * row of whole stills, six on a tablet held upright and three on a phone)
+ * row of whole stills, six on a tablet, five or four on a tall one held
+ * upright and three on a phone)
  * and filling the Video wall page (fourteen, nine, six). Each column is
  * lifted by a different part of a still so no row lines up. The card is a
  * still picture: its stills keep nearly all their colour under a light navy
@@ -396,8 +397,10 @@
 }
 
 /* Where the hero stacks, the card is one row of whole stills, each about as
-   wide as on a phone: six on a tablet held upright, five from 620 px, four
-   from 520 px, and three on a phone. */
+   wide as on a phone: six on a tablet, five from 620 px, four from 520 px,
+   and three on a phone. A tablet held upright has room for five from
+   930 px tall, and for four from 1000, so the row is as tall as the card
+   was before. */
 @media (max-width: 799px) {
 	.wall--card {
 		--cols: 6;
@@ -405,6 +408,18 @@
 
 	.wall--card .wall__still:nth-child(n) {
 		--lift: 0;
+	}
+}
+
+@media (min-width: 700px) and (max-width: 799px) and (min-height: 930px) {
+	.wall--card {
+		--cols: 5;
+	}
+}
+
+@media (min-width: 700px) and (max-width: 799px) and (min-height: 1000px) {
+	.wall--card {
+		--cols: 4;
 	}
 }
 

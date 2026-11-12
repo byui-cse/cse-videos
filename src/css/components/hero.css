@@ -2,16 +2,22 @@
  * The home page's hero, in the CS & SE site's manner: a blue gradient under
  * a faint grid, the headline (its second line gold), one line on what the
  * search covers, the search and the facts on the left, and on the right a
- * framed card holding the wall, shrunk, with the way to the Video wall under
- * it. The copy and the card share their edges: the card's top meets the
- * headline's capitals, its foot the search field's, and the way to the
- * Video wall under it sits on the facts' baseline.
+ * framed card holding the wall, shrunk. The card is a picture of the
+ * library at the size it had before the copy grew: 16:9 (4:3 under
+ * 1100 px), and a little over half the row. The way to the Video wall ends
+ * the copy, on a line of its own under the facts. The copy and the card
+ * share their edges: the card's top meets the headline's capitals and its
+ * foot that last line's baseline. Where the card is the taller, the few
+ * pixels it has over the copy go under the headline and under the lede, so
+ * the copy still reads as one block; where the copy is the taller, the card
+ * grows to it.
  * The headline's first line sets the copy's measure, so the lede and the
- * search end with it. Its air grows with the screen's height, so on a laptop
- * or a tablet the hero ends by four fifths of the way down the first screen
- * and the index starts on it. The card is a still picture: nothing in it
- * answers the pointer or the search. Where the hero stacks, it is one row of
- * whole stills.
+ * search end with it. Its air grows with the screen's height, and on a
+ * short screen the air, the headline and the card all give way, so on a
+ * laptop the hero ends about four fifths of the way down the first screen,
+ * and on a laptop or a tablet the index starts on it. The card is a still
+ * picture: nothing in it answers the pointer or the search. Where the hero
+ * stacks, it is one row of whole stills.
  */
 .hero {
 	position: relative;
@@ -36,25 +42,37 @@
 	outline-color: var(--focus-on-band);
 }
 
-/* The headline's size, capped by the screen's height on a short laptop, and
-   the width of its first line ("Find the right video" is 7.54 of it). The
-   copy's column is as wide as that line, and the card takes the rest. Air:
-   112 px above on a 1080 px screen, 100 at 900, 73 at 800, 52 at 720, never
-   under 52, and about as much under the facts' words. The lede's size, the
-   room it takes with its margin, and the field's height are kept here too,
-   for the card's height without JavaScript. */
+/* The headline's size, capped by the screen's height on a short laptop and
+   by the card's width on a narrow one, and the width of its first line
+   ("Find the right video" is 7.54 of it). The copy's column is as wide as
+   that line in the web font, and the card takes the rest, up to 0.53 of
+   the row after a 64 px gap (as large as it was before the copy grew); the
+   gap takes what is left over. Air: 112 px above the capitals and under
+   the last baseline on a 1080 px screen, 100 at 900, 79 at 830, 67 at 790,
+   then falling faster, to 40 at 736 and under. The card is never taller
+   than --card-cap, which is 376 px at 790 and falls with a shorter screen.
+   The lede's size, the room it takes with its margin, the field's height
+   and the room from the field to the last baseline are kept here too, for
+   the copy's height, the least the card takes (with or without
+   JavaScript).
+   The rows: the headline, room, the lede, room, the search, the facts and
+   the way to the Video wall. The two rooms are empty, and share what the
+   card has over the copy. */
 .hero__inner {
-	--title: clamp(44px, min(14px + 5vw, 9.6vh), 86px);
+	--title: clamp(62px, min(6.4vw - 11px, 9.6vh), 80px);
 	--measure: calc(var(--title) * 7.54);
 	--lede: clamp(19px, var(--title) * 0.27, 23px);
 	--lede-room: calc(var(--lede) * 1.45 + var(--title) * 0.4);
 	--field: clamp(56px, var(--title) * 0.75, 64px);
+	--foot: 80px;
+	--air: clamp(40px, min(30vh - 170px, 50vh - 328px), 112px);
+	--card-cap: calc(40vh + 60px);
 	position: relative;
 	display: grid;
-	grid-template-columns: max-content minmax(0, 1fr);
-	grid-template-rows: auto auto auto auto;
-	column-gap: clamp(48px, 8vw, 120px);
-	padding-block: clamp(52px, 26.67vh - 140px, 112px) clamp(56px, 26.67vh - 136px, 116px);
+	grid-template-columns: var(--measure) minmax(0, 1fr);
+	grid-template-rows: auto 1fr auto 1fr auto auto auto;
+	column-gap: max(clamp(48px, 4.5vw, 64px), 47% + 34px - var(--measure));
+	padding-block: calc(var(--air) - var(--title) * 0.135) var(--air);
 }
 
 /* The copy and the card are laid out as one grid, so the card can take its
@@ -79,12 +97,20 @@
 	display: block;
 }
 
+/* Beside the card each line of the headline is one line, in the fallback
+   font too, so the card's size never waits on the web font. */
+@media (min-width: 800px) {
+	.hero__line {
+		white-space: nowrap;
+	}
+}
+
 .hero__line--accent {
 	color: var(--gold);
 }
 
 .hero__lede {
-	grid-area: 2 / 1;
+	grid-area: 3 / 1;
 	max-width: var(--measure);
 	margin: 0 0 calc(var(--title) * 0.4);
 	color: var(--on-hero-muted);
@@ -94,7 +120,7 @@
 }
 
 .hero__search {
-	grid-area: 3 / 1;
+	grid-area: 5 / 1;
 	max-width: var(--measure);
 }
 
@@ -111,26 +137,27 @@
 	left: 20px;
 }
 
-/* The facts and the line under the card share a row of the grid and one
-   set of type, so their words sit on one baseline. The links in them are
-   44 px targets. */
+/* The facts and the way to the Video wall under them share one set of
+   type, and their lines are 44 px apart, the links in them 44 px targets.
+   The last row ends on the way's baseline, where the card's foot is, its
+   last 18 px hanging under it into the hero's air. */
 .hero__facts,
 .hero__under {
-	grid-row: 4;
+	grid-column: 1;
 	align-self: start;
 	min-height: 44px;
-	margin-top: 10px;
 	font-size: 16px;
 	line-height: 1.25;
 }
 
 .hero__facts {
-	grid-column: 1;
+	grid-row: 6;
+	margin-top: 10px;
+	margin-bottom: 0;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0 28px;
-	margin-bottom: 0;
 	padding: 0;
 	list-style: none;
 	color: var(--on-hero-muted);
@@ -175,12 +202,50 @@
 	color: var(--gold);
 }
 
+/* Beside the card the facts keep to one line, as wide as the headline's,
+   so a search never moves the copy or the card: a long search's count is
+   cut short (the page's status line reads it whole) and the topics keep
+   their place. */
+@media (min-width: 800px) {
+	.hero__facts {
+		width: 0;
+		min-width: 100%;
+		flex-wrap: nowrap;
+	}
+
+	.hero__facts li {
+		flex: 0 0 auto;
+	}
+
+	.hero__facts [data-results] {
+		display: block;
+		flex-shrink: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.hero__facts [data-results]::before {
+		display: inline-block;
+		margin-right: 10px;
+		vertical-align: middle;
+	}
+}
+
 /* The card: a window onto the wall, its stills square cornered inside a
    10 px frame. It runs from the headline's capitals (0.135 of the headline's
-   size below the top of its line) to the foot of the search field. */
+   size below the top of its line) to the copy's last baseline, 16:9 at the
+   width it has, and no taller than --card-cap, so on a short screen it is
+   a little wider than 16:9. The two empty rows in the copy take up the
+   height the copy lacks; where the copy is the taller, the card grows to
+   it. */
 .hero__card {
 	position: relative;
-	grid-area: 1 / 2 / 4 / 3;
+	grid-area: 1 / 2 / -1 / 3;
+	place-self: stretch;
+	aspect-ratio: 16 / 9;
+	max-height: var(--card-cap);
 	margin-top: calc(var(--title) * 0.135);
 	overflow: hidden;
 	overflow: clip;
@@ -190,24 +255,28 @@
 	box-shadow: 0 24px 60px rgb(0 16 34 / 40%);
 }
 
-/* Without JavaScript there is no search, so the lede, which is about it,
-   stays hidden too (src/js/main.js shows both). Beside the copy the card
-   keeps the height it has with them, from the headline's capitals to where
-   the field's foot would be (give or take a line where the lede would wrap
-   differently from the way it usually does at that width). */
+/* The card is never shorter than the copy, worked out from the headline's
+   capitals past the lede's room and the field to the last baseline (give
+   or take a line where the lede would wrap differently from the way it
+   usually does at that width), which also holds where the cap is lower.
+   Without JavaScript there is no search, so the lede, which is about it,
+   stays hidden too (src/js/main.js shows both), and the card keeps the
+   height it has with them. */
 @media (min-width: 800px) {
-	.hero__inner:has(.hero__search[hidden]) .hero__card {
-		min-height: calc(var(--title) * 2.105 + var(--lede-room) + var(--field));
+	.hero__card {
+		min-height: calc(var(--title) * 2.105 + var(--lede-room) + var(--field) + var(--foot));
 	}
 }
 
-/* Under the card: the way to the Video wall, at the card's right edge. */
+/* The way to the Video wall, the copy's last line, its words on the
+   copy's left edge and its baseline on the card's foot. */
 .hero__under {
-	grid-column: 2;
+	grid-row: 7;
+	justify-self: start;
 	display: flex;
 	align-items: center;
-	gap: 24px;
 	min-width: 0;
+	margin-bottom: -18px;
 }
 
 /* Its focus ring is gold, on the gradient alone, with no still behind it. */
@@ -217,8 +286,7 @@
 	align-items: center;
 	gap: 10px;
 	min-height: 44px;
-	margin-right: -10px;
-	margin-left: auto;
+	margin-left: -10px;
 	padding-inline: 10px;
 	border-radius: 4px;
 	color: #fff;
@@ -250,22 +318,31 @@
 	transform: translateX(3px);
 }
 
-/* From 800 to 1099 px the copy is narrower and its lede wraps, except on
-   the widest and tallest of these screens; the card beside it has four
-   columns. */
+/* From 800 to 1099 px the copy is narrower and its lede wraps; the card
+   beside it is 4:3, with four columns, and no taller than the 354 px it
+   was at 1024 px before the copy grew, so on the widest of these screens
+   it stands only a little over the copy. */
 @media (max-width: 1099px) {
 	.hero__inner {
-		--title: clamp(44px, min(5.9vw, 9.6vh), 62px);
+		--title: clamp(44px, min(5.6vw, 9.6vh), 62px);
 		--lede: 19px;
 		--lede-room: calc(var(--lede) * 1.45 * 2 + var(--title) * 0.4);
 		--field: 58px;
+		column-gap: 40px;
+	}
+
+	.hero__card {
+		max-height: min(var(--card-cap), 354px);
+		aspect-ratio: 4 / 3;
 	}
 }
 
 /* Under 800 px the hero stacks: the copy, then the card as one row of whole
-   stills (six on a tablet held upright), then the way to the Video wall at
-   its left edge. Its air shrinks with a short screen, and on a phone held
-   sideways the headline is held to the screen's height. */
+   stills (six; on a tablet held upright, five from 930 px tall and four
+   from 1000, as tall as the card was before, as the first screen has room
+   for), then the way to the Video wall at its left edge. Its air shrinks
+   with a short screen, and on a phone held sideways the headline is held
+   to the screen's height. */
 @media (max-width: 799px) {
 	.hero__inner {
 		--title: clamp(36px, min(7.4vw, 11vh), 58px);
@@ -301,18 +378,27 @@
 	}
 
 	.hero__card {
+		place-self: auto;
+		max-height: none;
 		margin-top: clamp(14px, 4vh - 16px, 32px);
 		aspect-ratio: 2880 / 750;
 	}
 
 	.hero__under {
 		margin-top: 6px;
+		margin-bottom: 0;
 	}
+}
 
-	.hero__open {
-		order: -1;
-		margin-right: 0;
-		margin-left: -10px;
+@media (min-width: 700px) and (max-width: 799px) and (min-height: 930px) {
+	.hero__card {
+		aspect-ratio: 2400 / 750;
+	}
+}
+
+@media (min-width: 700px) and (max-width: 799px) and (min-height: 1000px) {
+	.hero__card {
+		aspect-ratio: 1920 / 750;
 	}
 }
 
@@ -436,6 +522,14 @@
 
 	.hero__lede {
 		display: none;
+	}
+}
+
+/* There the card beside the copy is as tall as the copy, not 4:3. */
+@media (min-width: 800px) and (max-width: 1099px) and (max-height: 480px) {
+	.hero__card {
+		max-height: none;
+		aspect-ratio: auto;
 	}
 }
 
