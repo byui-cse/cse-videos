@@ -1,14 +1,22 @@
 /**
- * A video page's first screen: the player is the hero, on a full-bleed
- * band-deep band. A tall player (an Instagram reel or a YouTube Short) takes
- * a column up to 400 px wide with the title beside it; a 16:9 player takes
- * the band's width with the title under it. The switch or the "Only on"
- * line and Expand sit above the frame, and the cover paints under the embed
- * until it loads. Expanded, the same element is fixed over the page, so the
- * video keeps playing instead of reloading.
+ * A video page's first screen: one full-bleed band-deep band holds the whole
+ * record. In the page's order: the back link; the head (series, title,
+ * facts, Copy link and Open on); the player, its switch or "Only on" line
+ * and Expand above the frame; then the record (src/css/components/record.css).
+ *
+ * On a phone that order is the layout, so the title and Copy link come
+ * before the video and the player runs edge to edge. From 700 px the player
+ * steps aside (display: contents) so its bar and frame sit in the band's own
+ * grid: the bar shares a row with the back link, the title starts level with
+ * the frame, and the record settles at the foot of the frame. A tall player
+ * (an Instagram reel or a YouTube Short) takes a column sized so the whole
+ * embed fits the window where it can; a 16:9 player takes two thirds of the
+ * band, three fifths under 1100 px. The cover paints under the embed until
+ * it loads. Expanded, the same element is fixed over the page on an opaque
+ * ground, so the video keeps playing instead of reloading.
  */
 .player-band {
-	padding: 40px 0 72px;
+	padding: 32px 0 80px;
 	background: var(--band-deep);
 	color: #fff;
 }
@@ -19,10 +27,58 @@
 
 .player-band a {
 	color: #fff;
+	text-decoration-thickness: 1px;
+}
+
+.player-band a:hover {
+	text-decoration-thickness: 2px;
+}
+
+.player-band__inner {
+	/* An Instagram player is about 1.25 times its width plus 13rem tall, and
+	   its frame starts about 212 px down the window (header, band padding,
+	   bar). This width keeps all of it on screen, between the 20.5rem
+	   Instagram needs and 25rem. */
+	--player-width: clamp(20.5rem, (100svh - 444px) * 0.8, 25rem);
+
+	display: grid;
+	grid-template-columns: var(--player-width) minmax(0, 1fr);
+	grid-template-rows: auto auto 1fr;
+	grid-template-areas:
+		"bar back"
+		"frame head"
+		"frame record";
+	gap: 12px 72px;
+	align-items: start;
+}
+
+@media (min-width: 700px) {
+	.player:not(.is-expanded) {
+		display: contents;
+	}
+
+	.player:not(.is-expanded) .player__bar {
+		grid-area: bar;
+	}
+
+	.player:not(.is-expanded) .player__frame {
+		grid-area: frame;
+	}
+}
+
+/* A Short is 9:16 below the same bar. */
+.player-band__inner:has(.player[data-source="youtube"][data-youtube-shape="tall"]) {
+	--player-width: clamp(15rem, (100svh - 236px) * 9 / 16, 25rem);
+}
+
+/* A 16:9 player takes two thirds of the band, the record the rest. */
+.player-band__inner:has(.player[data-source="youtube"][data-youtube-shape="wide"]) {
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	column-gap: 56px;
 }
 
 .player-band__back {
-	margin-bottom: 16px;
+	grid-area: back;
 	font-weight: 600;
 }
 
@@ -33,19 +89,9 @@
 	color: var(--on-band-muted);
 }
 
-.player-band__inner {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	align-items: start;
-	gap: 32px 72px;
-}
-
-.player-band__inner:has(.player[data-source="youtube"][data-youtube-shape="wide"]) {
-	grid-template-columns: minmax(0, 1fr);
-}
-
-.player-band__info {
-	padding-top: 56px;
+.player-band__head {
+	grid-area: head;
+	container-type: inline-size;
 }
 
 .player-band__series {
@@ -54,57 +100,69 @@
 	font-size: var(--step-1);
 }
 
+/* Sized to its column as well as the window, so the longest word in a title
+   always fits whole beside the player. */
 .player-band__title {
 	max-width: 18ch;
 	font-family: var(--display);
-	font-size: var(--step-5);
+	font-size: min(var(--h1), 12cqi);
 	font-weight: 800;
-	line-height: 1;
+	line-height: 1.02;
 	letter-spacing: -0.025em;
+	overflow-wrap: normal;
+	text-wrap: balance;
+}
+
+/* A hyphenated word (lib/pages/video.js) stays on one line. */
+.player-band__title span {
+	white-space: nowrap;
 }
 
 .player-band__facts {
-	margin: 20px 0 32px;
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: 0.3em;
+	margin-top: 16px;
 	color: var(--on-band-muted);
 	font-size: var(--step-1);
 	font-variant-numeric: tabular-nums;
+}
+
+.player-band__facts > span {
+	white-space: nowrap;
 }
 
 .player-band__actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
-}
-
-.player-band__actions .button {
-	color: #fff;
+	margin-top: 28px;
 }
 
 .player-band__actions .button--light {
 	color: var(--light-button-ink);
 }
 
-.steps {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px 32px;
-	margin-top: 28px;
-	font-size: var(--step-1);
-	font-weight: 600;
+/* Open on YouTube or Instagram is the second choice: an outline, like Expand. */
+.player-band__open {
+	border-color: rgb(255 255 255 / 70%);
+	background: transparent;
+	color: #fff;
 }
 
-.steps__link {
-	display: inline-flex;
-	align-items: center;
-	min-height: 44px;
+.player-band__open:hover {
+	border-color: #fff;
+	background: rgb(255 255 255 / 10%);
 }
 
 /* ---------- the player ---------- */
 
 .player {
+	grid-area: player;
 	display: grid;
 	gap: 12px;
 	justify-items: stretch;
+	min-width: 0;
 }
 
 .player__bar {
@@ -167,9 +225,10 @@
 	border-color: #fff;
 }
 
-/* Says the Instagram player may be blocked, between the controls and the
-   video. */
+/* Says the Instagram player may be blocked, on its own line in the bar, so
+   it stays between the controls and the video. */
 .player__status {
+	flex-basis: 100%;
 	max-width: 33.75rem;
 	color: var(--on-band-muted);
 }
@@ -223,23 +282,11 @@
 	min-height: calc(100cqw * 750 / 480);
 }
 
-/* A 16:9 player fills the band up to the height of the window. */
-.player:not(.is-expanded) {
-	width: min(100%, 70rem, calc((100svh - 12rem) * 16 / 9));
-}
-
-/* A Short is at most 400 px wide, and narrower on short windows. */
-.player:not(.is-expanded)[data-source="youtube"][data-youtube-shape="tall"] {
-	width: min(25rem, calc((100svh - 12rem) * 9 / 16));
-	max-width: 100%;
-}
-
-/* Instagram's player is about 1.25 times as tall as it is wide plus 13rem of
-   its own header and footer, so on shorter windows it narrows to fit more of
-   it on screen, down to the 20.5rem Instagram needs. */
-.player:not(.is-expanded)[data-source="instagram"] {
-	width: clamp(20.5rem, calc((100svh - 25rem) * 0.8), 25rem);
-	max-width: 100%;
+/* A 16:9 player is never taller than the window below the header. */
+@media (min-width: 700px) {
+	.player:not(.is-expanded)[data-source="youtube"][data-youtube-shape="wide"] .player__frame {
+		width: min(100%, (100svh - 236px) * 16 / 9);
+	}
 }
 
 /* ---------- expanded ---------- */
@@ -248,7 +295,11 @@
 	overflow: hidden;
 }
 
+/* Opaque, so nothing of the page shows around the video. The bar is as wide
+   as the video, so Close sits over its right edge. */
 .player.is-expanded {
+	--expanded-width: min(100%, (100dvh - 6rem) * 16 / 9);
+
 	position: fixed;
 	inset: 0;
 	z-index: 500;
@@ -258,57 +309,107 @@
 	gap: 16px;
 	padding: 16px;
 	overflow-y: auto;
-	background: rgb(6 10 16 / 94%);
+	background: rgb(6 10 16);
 
 	/* Close sits above the video so it stays on screen even when Instagram's
 	   player is taller than the window. Centered when it all fits; scrolls
 	   from the top when it doesn't. */
 	.player__bar {
 		flex: none;
-		justify-content: center;
-		width: min(100%, 33.75rem);
+		width: var(--expanded-width);
 		margin-top: auto;
 	}
 
 	.player__frame {
 		flex: none;
-		width: min(100%, calc((100dvh - 6rem) * 16 / 9));
+		width: var(--expanded-width);
 		margin-bottom: auto;
 	}
 }
 
-.player.is-expanded[data-source="youtube"][data-youtube-shape="tall"] .player__frame {
-	width: min(100%, calc((100dvh - 6rem) * 9 / 16));
+.player.is-expanded[data-source="youtube"][data-youtube-shape="tall"] {
+	--expanded-width: min(100%, (100dvh - 6rem) * 9 / 16);
 }
 
-.player.is-expanded[data-source="instagram"] .player__frame {
-	width: min(100%, 33.75rem);
+/* Sized by the window's height as well, so the whole of Instagram's player
+   fits: 16 px of padding above and below, the 44 px bar and a 16 px gap. */
+.player.is-expanded[data-source="instagram"] {
+	--expanded-width: min(100%, 33.75rem, max(20.5rem, (100dvh - 300px) * 0.8));
 }
 
 @media (max-width: 1099px) {
+	/* The player keeps to Instagram's 20.5rem, leaving the title room. */
 	.player-band__inner {
+		--player-width: 20.5rem;
 		column-gap: 40px;
+	}
+
+	.player-band__inner:has(.player[data-source="youtube"][data-youtube-shape="tall"]) {
+		--player-width: min(20.5rem, max(15rem, (100svh - 236px) * 9 / 16));
+	}
+
+	.player-band__inner:has(.player[data-source="youtube"][data-youtube-shape="wide"]) {
+		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	}
+}
+
+/* Screens 500 px tall or less, like a phone held sideways or a laptop at
+   200 percent zoom: the frame starts at the top of the band, and the back
+   link, head and bar stack beside it. */
+@media (min-width: 700px) and (max-height: 500px) {
+	.player-band {
+		padding-top: 12px;
+	}
+
+	.player-band__inner:not(:has(.player[data-source="youtube"][data-youtube-shape="wide"])) {
+		grid-template-rows: auto auto auto 1fr;
+		grid-template-areas:
+			"frame back"
+			"frame head"
+			"frame bar"
+			"frame record";
 	}
 }
 
 @media (max-width: 699px) {
 	.player-band {
-		padding: 12px 0 48px;
+		padding: 12px 0 56px;
 	}
 
-	.player-band__back {
-		margin-bottom: 4px;
-	}
-
-	.player-band__inner {
+	.player-band__inner,
+	.player-band__inner:has(.player[data-source][data-youtube-shape]) {
 		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: none;
+		grid-template-areas:
+			"back"
+			"head"
+			"player"
+			"record";
+		row-gap: 8px;
 	}
 
-	.player-band__info {
-		padding-top: 8px;
+	.player-band__actions {
+		margin-top: 20px;
 	}
 
-	.player:not(.is-expanded)[data-source="instagram"] {
-		width: 100%;
+	.player {
+		gap: 8px;
+		margin-top: 12px;
+	}
+
+	.player__bar {
+		min-height: 0;
+	}
+
+	/* The player already fills the screen's width, so Expand adds nothing. */
+	.player__expand {
+		display: none;
+	}
+
+	/* Edge to edge: Instagram's player gets the screen's full width, never
+	   less than the 20.5rem it needs on a 360 px phone. */
+	.player:not(.is-expanded) .player__frame {
+		width: auto;
+		margin-inline: calc(-1 * var(--gutter));
 	}
 }

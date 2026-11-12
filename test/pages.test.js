@@ -351,9 +351,9 @@ describe("series on other pages", () => {
         assert.ok(!homePage(site).includes("data-show-all"));
     });
 
-    it("put a Copy link for the page beside its address in the facts", () => {
+    it("put the page's address in the facts, in pieces that break after a slash", () => {
         const page = videoPage({ ...site, siteUrl: "https://example.com/" }, lone);
-        assert.match(page, /<dt>Link to send<\/dt><dd class="docket__send"><span class="docket__link" data-page-url>https:\/\/example\.com\/videos\/lone\/<\/span> <button class="text-button" type="button" data-copy="\.\/" data-copy-name="Lone" data-needs-js hidden>Copy link<span class="visually-hidden" data-copy-suffix> to Lone<\/span><\/button><\/dd>/);
+        assert.match(page, /<dt>Link to send<\/dt><dd><span class="docket__link" data-page-url><span>https:\/\/example\.com\/<\/span><span>videos\/<\/span><span>lone\/<\/span><\/span><\/dd>/);
     });
 
     it("leave the series section and its links out when there is no series", () => {
@@ -564,7 +564,7 @@ describe("video pages", () => {
 
     it("show the date, length, tags, credits, and stats", async () => {
         const page = await read("videos/sample-short/index.html");
-        assert.match(page, /<time datetime="2026-10-19">Monday, October 19, 2026<\/time>/);
+        assert.match(page, /<time datetime="2026-10-19">October 19, 2026<\/time>/);
         assert.match(page, /<time datetime="PT1M5S"><span aria-hidden="true">1:05<\/span><span class="visually-hidden">1 minute 5 seconds<\/span><\/time>/);
         assert.match(page, /href="\.\.\/\.\.\/tags\/career-quest\/">Career Quest</);
         assert.match(page, /<li>Music from the Instagram library<\/li>/);
