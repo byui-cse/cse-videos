@@ -58,7 +58,7 @@ The department posts short videos on job searching, interviews, student projects
   &nbsp;
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/phone-dark.webp">
-    <img src=".github/readme/phone-light.webp" width="21%" alt="The home page on a phone">
+    <img src=".github/readme/phone-light.webp" width="21.7%" alt="The home page on a phone">
   </picture>
   <br>
   <sub>The Video wall, and the home page on a phone</sub>
@@ -182,7 +182,7 @@ Details worth knowing before changing it:
 - `src/js/search.js` is shared with the build, so search matches the same words everywhere.
 - `motion.js` is the only motion that runs on its own: Career Quest's boards fade up once. Everything else responds to a pointer, a key, or a click: a still on a wall lights up and is named in one label (the card's corner, or the Video wall's strip; `wall.js`, which also runs the Video wall's search), stills in the grid zoom slightly inside their frames, Career Quest's boards lift with a gold edge, and the still you click carries into the next page's player (`transition.js`, a cross-document view transition). With reduced motion turned on, nothing moves; the short fades on the wall stay.
 - The wall in the home page's card is for the pointer. Every video on it is also in the list below, so its links are left out of the tab order and hidden from screen readers. On the Video wall each video's own still is a link named by its title, after the search in the tab order; the copies that fill the rest of the screen are hidden from screen readers and the keyboard, and during a search so are the videos that don't match.
-- `js/main.js` holds the first paint until it has run (`blocking="render"`), with every module it imports preloaded beside it. Without that, Chromium paints a page while its modules are still loading and drops the page-to-page view transition with an error.
+- `src/js/main.js` holds the first paint until it has run (`blocking="render"`), with every module it imports preloaded beside it. Without that, Chromium paints a page while its modules are still loading and drops the page-to-page view transition with an error.
 - The look: a BYU-Idaho blue utility bar over a white header, a home hero in the manner of the department's CS & SE site (a blue gradient under a faint grid, the second line of the headline in gold, the wall in a framed card), navy bands, a blue footer, square stills, and 4 px corners on controls, in the CS & SE colors. The build bundles it into one file with [Lightning CSS](https://lightningcss.dev/). Light and dark follow the device.
 - Pages carry a strict Content Security Policy: no inline styles, and no inline scripts except the one on Instagram video pages, which the policy allows by its hash.
 
