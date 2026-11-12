@@ -11,7 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { bundle } from "lightningcss";
-import { writeCoverDerivatives } from "../lib/images.js";
+import { writeCoverDerivatives, writeShareImage } from "../lib/images.js";
 import { homePage, notFoundPage, tagPage, tagsPage, videoPage, videoWallPage } from "../lib/render.js";
 import { wallStageCss, wallTotal } from "../lib/wall.js";
 import { robotsTxt, sitemapXml } from "../lib/seo.js";
@@ -122,6 +122,7 @@ export const build = async ({
     await writeFile(path.join(staging, "css", "main.css"), `${code}\n${wallStageCss(videos.length, wallTotal(videos.length))}\n`);
 
     await writeCoverDerivatives({ covers, srcDir, outDir: staging });
+    await writeShareImage({ covers, srcDir, outDir: staging });
 
     await writeFile(path.join(staging, "data", "videos.json"), JSON.stringify(videos));
     await writeFile(path.join(staging, "data", "tags.json"), JSON.stringify(names));

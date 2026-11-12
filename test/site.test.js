@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import { readJpegSize } from "../lib/jpeg.js";
+import { writeShareImage } from "../lib/images.js";
 import {
     collectTags,
     cover,
@@ -196,6 +198,27 @@ describe("caption and cover helpers", () => {
         assert.match(text, /pavili255/);
         assert.match(text, /cc by sa/);
         assert.doesNotMatch(text, /https|wiki|example|creativecommons/);
+    });
+});
+
+describe("sharing image", () => {
+    it("composes a repeatable 1200 by 630 JPEG from cover stills", async () => {
+        const dir = await fs.mkdtemp(path.join(os.tmpdir(), "share-image-"));
+        const srcDir = fileURLToPath(new URL("../src", import.meta.url));
+        const covers = new Map([
+            ["career-quest-part-2", { width: 480, height: 750 }],
+            ["career-quest-part-1", { width: 480, height: 750 }]
+        ]);
+
+        try {
+            await writeShareImage({ covers, srcDir, outDir: dir });
+            const first = await fs.readFile(path.join(dir, "share.jpg"));
+            assert.deepEqual(await readJpegSize(path.join(dir, "share.jpg")), { width: 1200, height: 630 });
+            await writeShareImage({ covers, srcDir, outDir: dir });
+            assert.deepEqual(await fs.readFile(path.join(dir, "share.jpg")), first);
+        } finally {
+            await fs.rm(dir, { recursive: true, force: true });
+        }
     });
 });
 
