@@ -958,7 +958,9 @@ for (const viewport of [
         assert.ok(edges.openLine - edges.factsLine >= 40, `link ${edges.openLine}, facts ${edges.factsLine}`);
         assert.ok(Math.abs(edges.openLeft - edges.searchLeft) <= 2, `link ${edges.openLeft}, field ${edges.searchLeft}`);
         assert.ok(edges.searchBottom < edges.factsLine, `field foot ${edges.searchBottom}, facts ${edges.factsLine}`);
-        assert.ok(Math.abs(edges.searchRight - edges.titleRight) <= 2, `field ${edges.searchRight}, headline ${edges.titleRight}`);
+        // The headline's width differs by a pixel or two between platforms'
+        // text rendering, more at some sizes than others.
+        assert.ok(Math.abs(edges.searchRight - edges.titleRight) <= 3, `field ${edges.searchRight}, headline ${edges.titleRight}`);
         assert.ok(Math.abs(edges.cardRight - edges.containerRight) <= 1, `card ${edges.cardRight}, column ${edges.containerRight}`);
     });
 }
