@@ -1,9 +1,9 @@
 /**
  * The two walls' own behaviour.
  *
- * Both walls name the still under the pointer, or under the focus, in one
- * label (under the home page's card, the Video wall in its strip), since
- * the stills are too small to caption well.
+ * The Video wall names the still under the pointer, or under the focus, in
+ * its strip, since the stills are too small to caption well. (The home
+ * page's card is a still picture and has no label.)
  *
  * The Video wall page: the search lights the stills that match, echoes
  * included, and dims the rest, and keeps the search in the address so it can

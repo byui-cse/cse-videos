@@ -3,14 +3,13 @@
  * (five lifted columns; four from 800 to 1099 px; where the hero stacks, one
  * row of whole stills, six on a tablet held upright and three on a phone)
  * and filling the Video wall page (fourteen, nine, six). Each column is
- * lifted by a different part of a still so no row lines up. The card's
- * stills keep nearly all their colour under a light navy veil; pointing at
- * one clears its veil, dims the others and names it in one label (under the
- * card, or the Video wall's strip; src/js/wall.js). Without JavaScript the
- * Video wall names it on a strip along its lower edge instead. A search
- * lights the stills that match with a gold edge and dims the rest; in the
- * card the matches move to the front rows, so the first screen shows what
- * lit up.
+ * lifted by a different part of a still so no row lines up. The card is a
+ * still picture: its stills keep nearly all their colour under a light navy
+ * veil, have no links and don't answer the pointer. On the Video wall,
+ * pointing at a still clears its veil and names it in the strip
+ * (src/js/wall.js); without JavaScript it names itself on a strip along its
+ * lower edge instead. A search there lights the stills that match with a
+ * gold edge and dims the rest.
  */
 .wall {
 	--cols: 9;
@@ -53,6 +52,7 @@
 
 .wall--card {
 	--cols: 5;
+	pointer-events: none;
 }
 
 .wall--card .wall__still:nth-child(5n + 1) { --lift: 0.34; }
@@ -90,24 +90,13 @@
 	transition: opacity 180ms var(--state);
 }
 
-/* The card's stills keep nearly all their colour under a light veil. While
-   one is pointed at, it comes up to full colour and the others dim, so the
-   pointer still has something to light. */
+/* The card's stills keep nearly all their colour under a light veil. */
 .wall--card .wall__veil {
 	background: var(--veil-card);
 }
 
 .wall--card .wall__frame img {
 	filter: brightness(var(--photo-brightness)) saturate(0.9);
-	transition: filter 220ms var(--state);
-}
-
-.wall--card .wall__link:hover img {
-	filter: brightness(var(--photo-brightness)) saturate(1);
-}
-
-.wall--card:has(.wall__link:hover) .wall__still:not(:hover) picture {
-	opacity: 0.45;
 }
 
 .wall__edge {
@@ -117,10 +106,6 @@
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 200ms var(--state);
-}
-
-.wall--card .wall__edge {
-	border-width: 2px;
 }
 
 .wall__caption {
@@ -144,11 +129,6 @@
 	transform: translateY(6px);
 	transition: opacity 180ms var(--state), transform 180ms var(--state);
 	pointer-events: none;
-}
-
-/* The card's stills are too small to caption; its label names them. */
-.wall--card .wall__caption {
-	display: none;
 }
 
 /* With its label running, the Video wall's own captions step aside but stay

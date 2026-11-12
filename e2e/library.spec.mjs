@@ -391,40 +391,31 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
     }
 }
 
-test("pointing at a still in the hero's card names it under the card, dims the others, and a click opens it", async (t) => {
+test("the hero's card is a still picture: twenty stills, no links, and pointing at it changes nothing", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     const wall = page.locator("[data-wall]");
-    // The card is a picture of the library: twenty stills, no two the same.
+    // A picture of the library: twenty stills, no two the same.
     const ids = await wall.locator("[data-id]").evaluateAll((items) => items.map((item) => item.dataset.id));
     assert.equal(ids.length, 20);
     assert.equal(new Set(ids).size, Math.min(20, videos.length));
-    const label = page.locator("[data-wall-caption]");
-    assert.equal(await label.evaluate((node) => getComputedStyle(node).opacity), "0");
-    // A still the card shows whole.
-    const slot = await page.evaluate(() => {
-        const card = document.querySelector(".hero__card").getBoundingClientRect();
-        return [...document.querySelectorAll(".hero__card [data-id]")].findIndex((item) => {
-            const box = item.getBoundingClientRect();
-            return box.top >= card.top && box.bottom <= card.bottom && box.left >= card.left && box.right <= card.right;
-        });
-    });
-    assert.ok(slot >= 0);
-    const still = wall.locator("[data-id]").nth(slot);
-    const id = await still.getAttribute("data-id");
+    assert.equal(await wall.locator("a, button").count(), 0);
+    assert.equal(await page.locator("[data-wall-caption]").count(), 0);
+    assert.equal(await wall.evaluate((node) => getComputedStyle(node).pointerEvents), "none");
 
-    await still.hover();
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await label.elementHandle());
-    assert.equal(await label.textContent(), smartQuotes(videos.find((item) => item.id === id).title));
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await still.locator(".wall__veil").elementHandle());
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "1", await still.locator("picture").elementHandle());
-    const other = wall.locator("[data-id]").nth(slot === 0 ? 1 : 0).locator("picture");
-    await page.waitForFunction((node) => Number(getComputedStyle(node).opacity) < 0.6, await other.elementHandle());
-
-    await page.mouse.move(0, 0);
-    await page.waitForFunction((node) => getComputedStyle(node).opacity === "0", await label.elementHandle());
-    await still.locator("a").click();
-    await page.waitForURL(`**/videos/${id}/`);
+    const look = () => wall.locator("[data-id]").evaluateAll((items) => items.map((item) => [
+        getComputedStyle(item.querySelector("picture")).opacity,
+        getComputedStyle(item.querySelector(".wall__veil")).opacity,
+        getComputedStyle(item.querySelector("img")).filter
+    ]));
+    const before = await look();
+    const card = await page.locator(".hero__card").boundingBox();
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
+    await page.waitForTimeout(400);
+    assert.deepEqual(await look(), before);
+    await page.mouse.click(card.x + card.width / 2, card.y + card.height / 2);
+    await page.waitForTimeout(300);
+    assert.equal(new URL(page.url()).pathname, "/");
 });
 
 test("the link under the card opens the video wall", async (t) => {
@@ -449,7 +440,7 @@ test("the wall stays out of the keyboard's way: tabbing from the search goes to 
         const { page } = await site.page(t, { viewport });
         await page.goto("/");
         assert.equal(await page.getByRole("list", { name: /wall/i }).count(), 0);
-        assert.equal(await page.locator("[data-wall] a").evaluateAll((links) => links.every((link) => link.tabIndex === -1)), true);
+        assert.equal(await page.locator("[data-wall] a").count(), 0);
 
         // From the search, Tab goes to the topics link and the card's button, then
         // into the index, never onto a still.
@@ -502,7 +493,7 @@ test("clicking through the site raises no errors, view transitions included", as
     await page.getByRole("link", { name: "CSE Videos" }).first().click();
     await page.waitForURL(`${site.origin}/`);
     await settle();
-    await page.locator("[data-wall] a").nth(2).click();
+    await cards(page).nth(2).getByRole("link").first().click();
     await page.waitForURL(/\/videos\/[\w-]+\/$/);
     await settle();
     await page.goBack();
@@ -1079,7 +1070,9 @@ test("with reduced motion nothing drifts, waits or zooms, and every still is in 
     const tile = cards(page).nth(1);
     await tile.getByRole("link").hover();
     assert.equal(await tile.locator("img").evaluate((node) => getComputedStyle(node).transform), "none");
-    // The fades that answer a pointer or a search stay; only movement goes.
+    // On the Video wall the fades that answer a pointer or a search stay;
+    // only movement goes.
+    await page.goto("/wall/");
     assert.equal(await page.locator(".wall__veil").first().evaluate((node) => getComputedStyle(node).transitionDuration), "0.18s");
     assert.equal(await page.locator(".wall__caption").first().evaluate((node) => getComputedStyle(node).transform), "none");
 });

@@ -4,14 +4,14 @@
  * search covers, the search and the facts on the left, and on the right a
  * framed card holding the wall, shrunk, with the way to the Video wall under
  * it. The copy and the card share their edges: the card's top meets the
- * headline's capitals, its foot the search field's, and the line under it
- * (a still's name, the way to the Video wall) sits on the facts' baseline.
+ * headline's capitals, its foot the search field's, and the way to the
+ * Video wall under it sits on the facts' baseline.
  * The headline's first line sets the copy's measure, so the lede and the
  * search end with it. Its air grows with the screen's height, so on a laptop
  * or a tablet the hero ends by four fifths of the way down the first screen
- * and the index starts on it. Pointing at a still in the card lights it,
- * dims the rest and names it under the card. Where the hero stacks, the card
- * is one row of whole stills.
+ * and the index starts on it. The card is a still picture: nothing in it
+ * answers the pointer or the search. Where the hero stacks, it is one row of
+ * whole stills.
  */
 .hero {
 	position: relative;
@@ -201,30 +201,13 @@
 	}
 }
 
-/* Under the card: the name of the still under the pointer, and the way to
-   the Video wall at the card's right edge. */
+/* Under the card: the way to the Video wall, at the card's right edge. */
 .hero__under {
 	grid-column: 2;
 	display: flex;
 	align-items: center;
 	gap: 24px;
 	min-width: 0;
-}
-
-.hero__pointing {
-	overflow: hidden;
-	min-width: 0;
-	margin: 0;
-	color: var(--gold);
-	font-weight: 600;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	opacity: 0;
-	transition: opacity 160ms var(--state);
-}
-
-.hero__pointing.is-shown {
-	opacity: 1;
 }
 
 /* Its focus ring is gold, on the gradient alone, with no still behind it. */
@@ -265,13 +248,6 @@
 
 .hero__open:hover .arrow-icon {
 	transform: translateX(3px);
-}
-
-/* Touch screens have no pointer to name a still under. */
-@media (hover: none) {
-	.hero__pointing {
-		display: none;
-	}
 }
 
 /* From 800 to 1099 px the copy is narrower and its lede wraps, except on
@@ -337,10 +313,6 @@
 		order: -1;
 		margin-right: 0;
 		margin-left: -10px;
-	}
-
-	.hero__pointing {
-		margin-left: auto;
 	}
 }
 

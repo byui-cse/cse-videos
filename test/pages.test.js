@@ -200,14 +200,14 @@ describe("home page", () => {
         assert.match(hero, /<div class="hero__media">\s*<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
     });
 
-    it("puts the way to the video wall under the card, off its stills, beside the label that names a still", async () => {
+    it("puts the way to the video wall under the card, off its stills, with no label naming a still", async () => {
         const page = await read("index.html");
         const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
         const card = hero.slice(hero.indexOf('<div class="hero__card">'), hero.indexOf('<div class="hero__under">'));
         assert.ok(!card.includes("hero__open"));
-        assert.ok(!card.includes("data-wall-caption"));
         assert.match(card, /<\/ul>\s*<\/div>\s*$/);
-        assert.match(hero, /<div class="hero__under">\s*<p class="hero__pointing" aria-hidden="true" data-wall-caption><\/p>\s*<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"[^>]*aria-hidden="true"/);
+        assert.ok(!page.includes("data-wall-caption"));
+        assert.match(hero, /<div class="hero__under">\s*<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"[^>]*aria-hidden="true"/);
     });
 
     it("links home with ./ so the site name and All videos link clear a search", async () => {
@@ -430,20 +430,21 @@ describe("series on other pages", () => {
         assert.ok(!wall.includes("fetchpriority"));
     });
 
-    it("put every video on the card's wall once, then echoes to fill it, as links, in a fixed shuffle", () => {
+    it("puts every video on the card once, then echoes to fill it, as plain stills in a fixed shuffle", () => {
         const page = homePage(site);
         const wall = page.slice(page.indexOf("data-wall"), page.indexOf("</ul>", page.indexOf("data-wall")));
-        const own = [...wall.matchAll(/<li class="wall__still" data-id="[\w-]+"><a class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
-        const all = [...wall.matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
+        const own = [...wall.matchAll(/<li class="wall__still" data-id="([\w-]+)">/g)].map((match) => match[1]);
+        const all = [...wall.matchAll(/<li class="wall__still(?: wall__still--echo)?" data-id="([\w-]+)">/g)].map((match) => match[1]);
 
         assert.deepEqual([...own].sort(), videos.map((video) => video.id).sort());
         assert.equal(all.length, CARD_STILLS);
         assert.deepEqual(all.slice(0, videos.length), own);
-        assert.deepEqual(all, [...homePage(site).matchAll(/class="wall__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]));
-        assert.match(wall, /<span class="wall__caption">Quest, Part 1: Step 1<\/span>/);
-        // The index has every video for the keyboard; the wall is for the pointer.
+        assert.deepEqual(all, [...homePage(site).matchAll(/<li class="wall__still(?: wall__still--echo)?" data-id="([\w-]+)">/g)].map((match) => match[1]));
+        // The card is a still picture: no links, no captions, hidden from
+        // screen readers. The index has every video.
         assert.match(page, /<ul class="wall wall--card" aria-hidden="true" data-wall>/);
-        assert.equal(wall.match(/class="wall__link" href="[^"]+" tabindex="-1"/g).length, CARD_STILLS);
+        assert.ok(!wall.includes("<a "));
+        assert.ok(!wall.includes("wall__caption"));
         assert.ok(!page.includes("Skip past the wall"));
     });
 });
