@@ -1,6 +1,7 @@
 /**
  * The header: a BYU-I blue utility bar naming the department, over a white
- * masthead with the wordmark set in type, three links, and the search button.
+ * masthead with the wordmark set in type, the links, and the search button.
+ * Every link in it is a 44 px target on a touch screen.
  */
 .utility {
 	min-height: 36px;
@@ -27,11 +28,14 @@
 	display: none;
 }
 
+/* Each link carries 8 px of the space between them, so its focus ring fits
+   inside the bar; the last one's sits past the edge, so its text lines up
+   with the masthead's. */
 .utility__links {
 	display: flex;
 	flex: 0 0 auto;
-	gap: 24px;
-	margin: 0 0 0 auto;
+	gap: 8px;
+	margin: 0 -8px 0 auto;
 	padding: 0;
 	list-style: none;
 }
@@ -40,6 +44,7 @@
 	display: inline-flex;
 	align-items: center;
 	min-height: 36px;
+	padding-inline: 8px;
 	color: #fff;
 	text-decoration: none;
 	white-space: nowrap;
@@ -49,8 +54,19 @@
 	text-decoration: underline;
 }
 
+/* The bar is as tall as its links, so the ring goes inside them, where the
+   whole of it shows against the blue. */
 .utility :focus-visible {
 	outline-color: #fff;
+	outline-offset: -3px;
+}
+
+@media (pointer: coarse) {
+	.utility,
+	.utility__inner,
+	.utility a {
+		min-height: 44px;
+	}
 }
 
 .masthead {
@@ -66,10 +82,12 @@
 	height: 100%;
 }
 
+/* Padded to a 44 px target around the type. */
 .wordmark {
 	display: flex;
 	align-items: baseline;
 	gap: 14px;
+	padding-block: 7px;
 	color: var(--wordmark);
 	text-decoration: none;
 	white-space: nowrap;
@@ -104,6 +122,8 @@
 .site-nav__link {
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
+	min-width: 44px;
 	min-height: 44px;
 	color: var(--ink);
 	font-size: 18px;
@@ -145,6 +165,12 @@
 }
 
 @media (prefers-color-scheme: dark) {
+	/* The footer band's deeper blue, so the bar doesn't glare over a dark
+	   page. */
+	.utility {
+		background: #00477c;
+	}
+
 	.search-button {
 		border-color: var(--mark);
 		color: var(--mark);
@@ -157,6 +183,8 @@
 	}
 }
 
+/* A phone keeps the search button and the three main links; the series
+   is on the home page and in the footer. */
 @media (max-width: 699px) {
 	.utility__long,
 	.utility__department {
@@ -167,8 +195,17 @@
 		display: inline;
 	}
 
+	.utility__inner {
+		column-gap: 16px;
+	}
+
 	.utility__links {
-		gap: 16px;
+		gap: 4px;
+		margin-right: -6px;
+	}
+
+	.utility a {
+		padding-inline: 6px;
 	}
 
 	.masthead {
@@ -179,8 +216,16 @@
 		gap: 10px;
 	}
 
+	.wordmark {
+		padding-block: 12px;
+	}
+
 	.wordmark__name {
 		font-size: 20px;
+	}
+
+	.site-nav__series {
+		display: none;
 	}
 
 	.site-nav__list {
@@ -196,10 +241,6 @@
 	.site-nav__link:hover {
 		text-underline-offset: 8px;
 	}
-
-	.search-button {
-		display: none;
-	}
 }
 
 @media (max-width: 449px) {
@@ -211,7 +252,8 @@
 		display: inline;
 	}
 
-	/* Four links and the wordmark on one line down to 380 px. */
+	/* The wordmark, three links and the search button on one line down to
+	   380 px. */
 	.site-nav__list {
 		gap: 8px;
 	}
@@ -224,7 +266,8 @@
 	}
 }
 
-/* The narrowest phones put the wordmark over the links. */
+/* The narrowest phones put the wordmark and the search button over the
+   links. */
 @media (max-width: 379px) {
 	.masthead {
 		height: auto;
@@ -233,10 +276,16 @@
 	.masthead__inner {
 		flex-wrap: wrap;
 		row-gap: 0;
-		padding-block: 10px 2px;
+		padding-block: 4px 2px;
 	}
 
 	.site-nav {
+		order: 1;
+		flex-basis: 100%;
 		margin-left: 0;
+	}
+
+	.search-button {
+		margin-left: auto;
 	}
 }

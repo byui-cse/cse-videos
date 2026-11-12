@@ -7,7 +7,7 @@
  * search always looks through all of them.
  */
 import { matches } from "./search.js";
-import { countText, listUrl, readListParams } from "./state.js";
+import { countText, listUrl, orderText, readListParams } from "./state.js";
 
 const EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
 
@@ -85,8 +85,9 @@ export const initList = () => {
     const restText = results?.textContent ?? undefined;
     const baseTitle = document.title;
     const defaultOrder = list.dataset.defaultOrder === "oldest" ? "oldest" : "newest";
-    // A grid with a lead tile draws its first video two by two, whatever the
-    // search or order, and gives the browser the bigger size for its still.
+    // A grid with a lead tile draws its newest video two by two, and gives
+    // the browser the bigger size for its still. Only the plain list has one:
+    // in a search or the other order the first video isn't the newest.
     const { leadSizes, tileSizes } = list.dataset;
     // The build writes the cards in the list's default order.
     let shownOrder = defaultOrder;
@@ -111,8 +112,9 @@ export const initList = () => {
 
     // The visible count changes right away. The screen reader copy waits for
     // a pause in typing, so it reads one result instead of one per key, and
-    // stays quiet when the page first loads.
-    const announce = (text, when) => {
+    // stays quiet when the page first loads. It can say more than the count,
+    // like the new order.
+    const announce = (text, when, spoken = text) => {
         clearTimeout(announceTimer);
 
         if (results) {
@@ -124,20 +126,23 @@ export const initList = () => {
         }
 
         if (when === "now") {
-            announcer.textContent = text;
+            announcer.textContent = spoken;
         } else {
             announceTimer = setTimeout(() => {
-                announcer.textContent = text;
+                announcer.textContent = spoken;
             }, 700);
         }
     };
 
-    const markLead = () => {
+    /**
+     * @param {boolean} plain no search, and the list's own order
+     */
+    const markLead = (plain) => {
         if (!leadSizes || !tileSizes) {
             return;
         }
 
-        const lead = list.querySelector(":scope > li:not([hidden])");
+        const lead = plain ? list.querySelector(":scope > li:not([hidden])") : null;
 
         for (const { card } of cards) {
             const on = card === lead;
@@ -154,9 +159,9 @@ export const initList = () => {
     };
 
     /**
-     * @param {{ announce?: "now" | "after-pause" | "never", animate?: boolean }} [options]
+     * @param {{ announce?: "now" | "after-pause" | "never", animate?: boolean, reordered?: boolean }} [options]
      */
-    const update = ({ announce: when = "now", animate = false } = {}) => {
+    const update = ({ announce: when = "now", animate = false, reordered = false } = {}) => {
         const query = input ? input.value.trim() : "";
         // A list without the menu, like a series, keeps its own order.
         const order = sort ? (sort.value === "oldest" ? "oldest" : "newest") : defaultOrder;
@@ -193,7 +198,7 @@ export const initList = () => {
                 showAllRow.hidden = !folded;
             }
 
-            markLead();
+            markLead(query === "" && order === defaultOrder);
         };
 
         if (animate) {
@@ -202,7 +207,8 @@ export const initList = () => {
             change();
         }
 
-        announce(countText(shown, cards.length, query, restText), when);
+        const count = countText(shown, cards.length, query, restText);
+        announce(count, when, reordered ? orderText(order, count) : count);
 
         if (empty) {
             empty.hidden = shown > 0 || query === "";
@@ -225,15 +231,38 @@ export const initList = () => {
         }
     };
 
+    // After a search is sent the results come onto the screen: the heading
+    // goes to the top unless the first result already shows whole. On a
+    // phone the hero's card sits between the field and the results, so they
+    // would otherwise stay below the fold.
+    const showResults = () => {
+        if (!heading) {
+            return;
+        }
+
+        // Moving focus to the results closes the phone keyboard and puts
+        // keyboard and screen reader users where the results start.
+        heading.focus({ preventScroll: true });
+
+        const first = [...list.children].find((card) => !card.hidden && card.getClientRects().length > 0)
+            ?? (empty && !empty.hidden ? empty : null);
+        const box = first?.getBoundingClientRect();
+
+        if (box && box.top >= 0 && box.bottom <= window.innerHeight) {
+            return;
+        }
+
+        const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        heading.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    };
+
     input?.addEventListener("input", () => update({ announce: "after-pause", animate: true }));
-    sort?.addEventListener("change", () => update({ animate: true }));
+    sort?.addEventListener("change", () => update({ animate: true, reordered: true }));
 
     input?.form?.addEventListener("submit", (event) => {
         event.preventDefault();
         update();
-        // Moving focus to the results closes the phone keyboard and puts
-        // keyboard and screen reader users where the results start.
-        heading?.focus();
+        showResults();
     });
 
     showAll?.addEventListener("click", () => {

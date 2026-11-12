@@ -23,6 +23,12 @@
 	margin-bottom: 48px;
 }
 
+/* A search sent from the field brings this heading to the top of the
+   screen, with a little room above it. */
+.index .section-title {
+	scroll-margin-top: 24px;
+}
+
 .section-head__intro {
 	display: flex;
 	flex-wrap: wrap;
@@ -147,15 +153,15 @@
 	transform: scale(1.04);
 }
 
-/* Every tile in a row is as tall as the row, and its date and Copy link sit
-   at the bottom, one under the other on every tile, so a row has one
-   baseline however its titles wrap. */
+/* Every tile in a row is as tall as the row. Its date sits right under its
+   title, and its Copy link at the foot, so a row's links share one line
+   however its titles wrap. */
 .tile__line {
 	display: flex;
+	flex: 1 0 auto;
 	flex-direction: column;
 	align-items: flex-start;
-	margin-top: auto;
-	padding-top: 4px;
+	padding-top: 6px;
 }
 
 .tile__meta {
@@ -167,6 +173,7 @@
 }
 
 .tile__copy {
+	margin-top: auto;
 	min-height: 44px;
 	padding: 0;
 	border: 0;
@@ -211,10 +218,14 @@
 	letter-spacing: -0.015em;
 }
 
-/* Its date and Copy link sit on the second row's line, so the cell is
-   filled to the same foot as the tiles beside it. */
+/* Its date and Copy link stay with its title; the cell's foot is left
+   open. */
 .tile--lead .tile__line {
 	padding-top: 8px;
+}
+
+.tile--lead .tile__copy {
+	margin-top: 0;
 }
 
 /* On a phone the index opens on its first videos; the rest wait for "Show
@@ -289,6 +300,37 @@
 	.section-head {
 		align-items: flex-start;
 		margin-bottom: 36px;
+	}
+
+	/* The order menu and the list's link button share one row: the menu
+	   names itself, and the button reads as a link, like Copy link under a
+	   still. */
+	.section-head__tools {
+		gap: 4px 20px;
+	}
+
+	.sort__label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	.section-head__tools .copy-link__button,
+	.section-head__tools .copy-link__button:hover {
+		min-height: 44px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--link);
+	}
+
+	.section-head__tools .copy-link__button:hover {
+		text-decoration: underline 1px;
+		text-underline-offset: 3px;
 	}
 
 	.grid,

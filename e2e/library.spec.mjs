@@ -545,7 +545,8 @@ test("on a phone the index opens on thirteen videos, and a search still looks th
 test("a search lights its stills on the wall and closes up the index", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
-    const firstBox = await cards(page).nth(1).boundingBox();
+    const leadBox = await cards(page).first().boundingBox();
+    const tileBox = await cards(page).nth(1).boundingBox();
     await page.getByRole("searchbox", { name: "Search videos" }).fill("portfolio");
     const shown = await shownIds(page);
     assert.ok(shown.length > 0 && shown.length < videos.length);
@@ -555,11 +556,12 @@ test("a search lights its stills on the wall and closes up the index", async (t)
     const copies = await page.locator("[data-wall] [data-id]").evaluateAll((items, ids) => items.filter((item) => ids.includes(item.dataset.id)).length, shown);
     assert.equal(await page.locator("[data-wall] .is-match").count(), copies);
     assert.equal(await page.locator("[data-wall] .is-dim").count(), await page.locator("[data-wall] [data-id]").count() - copies);
-    // The first match is drawn large; the second sits where the second tile was.
-    assert.equal(await cards(page).first().evaluate((item) => item.classList.contains("tile--lead")), true);
+    // Every match is drawn at one size, the first where the newest video was.
+    assert.equal(await page.locator("[data-video-list] > .tile--lead").count(), 0);
     await page.waitForFunction(() => document.querySelector("[data-video-list]").getAnimations({ subtree: true }).length === 0);
-    const secondBox = await cards(page).nth(1).boundingBox();
-    assert.deepEqual([secondBox.x, secondBox.y], [firstBox.x, firstBox.y]);
+    const firstBox = await cards(page).first().boundingBox();
+    assert.deepEqual([firstBox.x, firstBox.y], [leadBox.x, leadBox.y]);
+    assert.deepEqual(await cards(page).evaluateAll((items) => [...new Set(items.map((item) => Math.round(item.getBoundingClientRect().width)))]), [Math.round(tileBox.width)]);
     assert.equal(await page.locator("[data-wall] .is-match .wall__edge").first().evaluate((node) => getComputedStyle(node).opacity), "1");
 
     // The card brings its matches to its front rows, so every one is on show.
@@ -855,7 +857,9 @@ test("the video wall's focus ring shows over the still, and the strip keeps nami
     const title = await focused.getAttribute("href").then((href) => smartQuotes(videos.find((item) => href.endsWith(`/${item.id}/`)).title));
     const label = page.locator("[data-wall-caption]");
     await page.locator("[data-wall-page] [data-search]").nth(20).hover();
-    await page.mouse.move(5, 5);
+    // Off the wall, onto its strip, which stays on screen however the page scrolled.
+    const strip = await page.locator(".band__title").boundingBox();
+    await page.mouse.move(strip.x + 5, strip.y + 5);
     await page.waitForFunction(([node, text]) => node.textContent === text && getComputedStyle(node).opacity === "1", [await label.elementHandle(), title]);
 });
 
@@ -1007,7 +1011,9 @@ for (const width of [320, 360, 375, 380, 400, 420, 430, 449, 450, 500, 700, 710,
         await page.evaluate(() => document.fonts.ready);
         const fit = await page.evaluate(() => {
             const inner = document.querySelector(".masthead__inner").getBoundingClientRect();
-            const links = [...document.querySelectorAll(".site-nav__link")].map((link) => link.getBoundingClientRect());
+            const links = [...document.querySelectorAll(".site-nav__link, .search-button")]
+                .filter((link) => link.getClientRects().length > 0)
+                .map((link) => link.getBoundingClientRect());
             return {
                 scroll: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
                 inside: links.every((box) => box.right <= inner.right + 1 && box.left >= inner.left - 1)
