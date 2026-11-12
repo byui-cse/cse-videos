@@ -418,18 +418,26 @@ test("the hero's card is a still picture: twenty stills, no links, and pointing 
     assert.equal(new URL(page.url()).pathname, "/");
 });
 
-test("the link under the card opens the video wall", async (t) => {
+test("the way to the video wall is the copy's last line, beside the card's foot, and opens the wall", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
     const open = page.getByRole("link", { name: "Open the video wall" });
     const card = await page.locator(".hero__card").boundingBox();
     const hero = await page.locator(".hero").boundingBox();
+    const facts = await page.locator(".hero__facts").boundingBox();
     const box = await open.boundingBox();
     assert.equal(await page.locator(".hero__card .hero__open").count(), 0, "the link is off the card's stills");
-    assert.ok(box.y >= card.y + card.height && box.y + box.height <= hero.y + hero.height, "the link sits under the card, in the hero");
-    // Its words end at the card's right edge.
-    const right = await open.evaluate((node) => node.querySelector(".arrow-icon").getBoundingClientRect().right);
-    assert.ok(Math.abs(right - (card.x + card.width)) <= 4, `${right} ${card.x + card.width}`);
+    assert.ok(box.x + box.width <= card.x && box.y + box.height <= hero.y + hero.height, "the link sits beside the card, in the hero");
+    assert.ok(box.y >= facts.y + facts.height - 1 && box.y < card.y + card.height && box.y + box.height > card.y + card.height - 30, "the link is under the facts, by the card's foot");
+    // Its words start at the copy's left edge.
+    const left = await open.evaluate((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return range.getBoundingClientRect().left;
+    });
+    const field = await page.getByRole("searchbox", { name: "Search videos" }).boundingBox();
+    assert.ok(Math.abs(left - field.x) <= 2, `${left} ${field.x}`);
     await open.click();
     await page.waitForURL("**/wall/");
     assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Video wall");
@@ -891,7 +899,9 @@ test("a video opened from the video wall links back to it, and to its search", a
     assert.equal(await page.getByRole("searchbox", { name: "Search videos" }).inputValue(), "portfolio");
 });
 
-// The baseline of an element's first line of words, from a probe put before them.
+// The baseline of an element's first line of words, from a probe put before
+// them. The words and the probe share a span, so they share a line even where
+// their parent lays out its children as boxes (a flex row, say).
 const baseline = (node) => {
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     let text = walker.nextNode();
@@ -900,15 +910,20 @@ const baseline = (node) => {
         text = walker.nextNode();
     }
 
+    const line = document.createElement("span");
     const probe = document.createElement("span");
     probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
-    text.parentNode.insertBefore(probe, text);
+    text.replaceWith(line);
+    line.append(probe, text);
     const y = probe.getBoundingClientRect().top;
-    probe.remove();
+    line.replaceWith(text);
     return y;
 };
 
-for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 900, height: 800 }, { width: 844, height: 390 }]) {
+for (const viewport of [
+    { width: 1920, height: 1080 }, { width: 1536, height: 730 }, { width: 1470, height: 830 }, { width: 1440, height: 900 }, { width: 1440, height: 790 }, { width: 1366, height: 768 },
+    { width: 1280, height: 720 }, { width: 1100, height: 900 }, { width: 1099, height: 900 }, { width: 1024, height: 768 }, { width: 900, height: 800 }, { width: 844, height: 390 }
+]) {
     test(`the card shares the copy's edges at ${viewport.width}x${viewport.height}`, async (t) => {
         // Reduced motion, so the headline isn't caught rising into place.
         const { page } = await site.page(t, { viewport, bypassCSP: true, reducedMotion: "reduce" });
@@ -930,20 +945,71 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 90
                 titleRight: (() => { const range = document.createRange(); range.selectNodeContents(title); return range.getBoundingClientRect().right; })(),
                 factsLine: read(document.querySelector(".hero__facts")),
                 openLine: read(document.querySelector(".hero__open")),
+                openLeft: (() => { const range = document.createRange(); range.selectNodeContents(document.querySelector(".hero__open")); return range.getBoundingClientRect().left; })(),
+                searchLeft: box(".hero .search__input").left,
                 containerRight: box(".hero__inner").right - parseFloat(getComputedStyle(document.querySelector(".hero__inner")).paddingRight)
             };
         }, baseline.toString());
         assert.ok(Math.abs(edges.cardTop - edges.capTop) <= 2, `card top ${edges.cardTop}, capitals ${edges.capTop}`);
-        assert.ok(Math.abs(edges.cardBottom - edges.searchBottom) <= 1, `card foot ${edges.cardBottom}, field foot ${edges.searchBottom}`);
-        assert.ok(Math.abs(edges.openLine - edges.factsLine) <= 1, `link ${edges.openLine}, facts ${edges.factsLine}`);
-        assert.ok(Math.abs(edges.searchRight - edges.titleRight) <= 2, `field ${edges.searchRight}, headline ${edges.titleRight}`);
+        // The card's foot is the copy's last baseline: the way to the Video
+        // wall's, on a line of its own under the facts, at the copy's left
+        // edge.
+        assert.ok(Math.abs(edges.cardBottom - edges.openLine) <= 2, `card foot ${edges.cardBottom}, last baseline ${edges.openLine}`);
+        assert.ok(edges.openLine - edges.factsLine >= 40, `link ${edges.openLine}, facts ${edges.factsLine}`);
+        assert.ok(Math.abs(edges.openLeft - edges.searchLeft) <= 2, `link ${edges.openLeft}, field ${edges.searchLeft}`);
+        assert.ok(edges.searchBottom < edges.factsLine, `field foot ${edges.searchBottom}, facts ${edges.factsLine}`);
+        // The headline's width differs by a pixel or two between platforms'
+        // text rendering, more at some sizes than others.
+        assert.ok(Math.abs(edges.searchRight - edges.titleRight) <= 3, `field ${edges.searchRight}, headline ${edges.titleRight}`);
         assert.ok(Math.abs(edges.cardRight - edges.containerRight) <= 1, `card ${edges.cardRight}, column ${edges.containerRight}`);
     });
 }
 
+// Where the card is taller than the copy, what it has over goes under the
+// headline and under the lede in equal parts, a few pixels each, so the
+// headline stays with the lede and the lede with the search.
 for (const viewport of [
-    { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1100, height: 900 }, { width: 1024, height: 768 },
-    { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 660, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 640 }
+    { width: 1920, height: 1080 }, { width: 1536, height: 864 }, { width: 1536, height: 730 }, { width: 1470, height: 830 }, { width: 1440, height: 900 },
+    { width: 1440, height: 790 }, { width: 1440, height: 768 }, { width: 1366, height: 768 }, { width: 1280, height: 800 }, { width: 1024, height: 768 }
+]) {
+    test(`the copy beside the card reads as one block at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport, reducedMotion: "reduce" });
+        await page.goto("/");
+        await page.evaluate(() => document.fonts.ready);
+        const gaps = await page.evaluate(() => {
+            const range = document.createRange();
+            range.selectNodeContents(document.querySelector(".hero__title"));
+            const lede = document.querySelector(".hero__lede").getBoundingClientRect();
+            const field = document.querySelector(".hero .search__input").getBoundingClientRect();
+            return { underHeadline: lede.top - range.getBoundingClientRect().bottom, underLede: field.top - lede.bottom };
+        });
+        assert.ok(gaps.underHeadline <= 28 && gaps.underLede <= 48, JSON.stringify(gaps));
+    });
+}
+
+// The card was this large before the hero took its air and its lede, and is
+// no smaller now: as wide and as tall at each size (on a phone, one row of
+// three whole stills is as tall as it can be).
+for (const { viewport, card } of [
+    { viewport: { width: 1920, height: 1080 }, card: [665, 374] }, { viewport: { width: 1536, height: 864 }, card: [665, 374] },
+    { viewport: { width: 1470, height: 830 }, card: [665, 374] }, { viewport: { width: 1440, height: 900 }, card: [665, 374] },
+    { viewport: { width: 1440, height: 790 }, card: [665, 374] }, { viewport: { width: 1366, height: 768 }, card: [628, 353] },
+    { viewport: { width: 1280, height: 800 }, card: [586, 329] }, { viewport: { width: 1024, height: 768 }, card: [472, 354] },
+    { viewport: { width: 768, height: 1024 }, card: [706, 235] }, { viewport: { width: 390, height: 844 }, card: [347, 180] }
+]) {
+    test(`the hero's card is at least ${card.join(" by ")} at ${viewport.width}x${viewport.height}`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        await page.goto("/");
+        await page.evaluate(() => document.fonts.ready);
+        const box = await page.locator(".hero__card").boundingBox();
+        assert.ok(box.width >= card[0] - 1 && box.height >= card[1] - 1, `${Math.round(box.width)} by ${Math.round(box.height)}`);
+    });
+}
+
+for (const viewport of [
+    { width: 1920, height: 1080 }, { width: 1536, height: 730 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1100, height: 900 },
+    { width: 1099, height: 900 }, { width: 1024, height: 768 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 768, height: 950 }, { width: 660, height: 900 },
+    { width: 600, height: 800 }, { width: 390, height: 844 }, { width: 320, height: 640 }
 ]) {
     test(`the hero's card is filled to every edge at ${viewport.width}x${viewport.height}`, async (t) => {
         const { page } = await site.page(t, { viewport });
@@ -992,8 +1058,9 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768
 }
 
 for (const viewport of [
-    { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 },
-    { width: 799, height: 900 }, { width: 768, height: 1024 }, { width: 760, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 },
+    { width: 1920, height: 1080 }, { width: 1536, height: 730 }, { width: 1470, height: 830 }, { width: 1440, height: 900 }, { width: 1440, height: 790 }, { width: 1440, height: 768 },
+    { width: 1366, height: 768 }, { width: 1366, height: 720 }, { width: 1280, height: 800 }, { width: 1280, height: 720 }, { width: 1024, height: 768 },
+    { width: 799, height: 900 }, { width: 768, height: 1024 }, { width: 768, height: 950 }, { width: 760, height: 900 }, { width: 600, height: 800 }, { width: 390, height: 844 },
     { width: 375, height: 667 }, { width: 360, height: 740 }, { width: 360, height: 640 }, { width: 320, height: 640 }
 ]) {
     // A phone is a touch screen, whose utility bar is 44 px for its links.

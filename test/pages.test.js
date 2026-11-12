@@ -200,7 +200,7 @@ describe("home page", () => {
         assert.match(hero, /<div class="hero__media">\s*<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
     });
 
-    it("puts the way to the video wall under the card, off its stills, with no label naming a still", async () => {
+    it("puts the way to the video wall after the card, off its stills, with no label naming a still", async () => {
         const page = await read("index.html");
         const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
         const card = hero.slice(hero.indexOf('<div class="hero__card">'), hero.indexOf('<div class="hero__under">'));
