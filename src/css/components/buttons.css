@@ -50,21 +50,3 @@
 		background: var(--tint);
 	}
 }
-
-/* A link button inside a line of text, like Copy link under a still. */
-.text-button {
-	min-height: 44px;
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--link);
-	font-size: 16px;
-	font-weight: 600;
-	white-space: nowrap;
-	cursor: pointer;
-}
-
-.text-button:hover {
-	text-decoration: underline 1px;
-	text-underline-offset: 3px;
-}

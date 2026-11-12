@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { COVER_FORMATS, coverSources, derivativePath, derivativeWidths, writeCoverDerivatives } from "../lib/images.js";
-import { clock, formatDate, lengthSeconds, libraryLine, listFacts, oneADay, partTitle, runningTime } from "../lib/site.js";
+import { clock, lengthSeconds, libraryLine, listFacts, oneADay, partTitle, runningTime } from "../lib/site.js";
 import { CARD_FRONT, CARD_QUIET, CARD_STILLS, WALL_LEAD, WALL_STILLS, cardOrder, seededRandom, topicStills, wallFill, wallOrder, wallStageCss, wallTotal } from "../lib/wall.js";
 
 const SRC = new URL("../src/", import.meta.url).pathname;
@@ -41,11 +41,6 @@ describe("running times", () => {
 });
 
 describe("series wording", () => {
-    it("writes dates with their weekday", () => {
-        assert.equal(formatDate("2026-10-19", "full"), "Monday, October 19, 2026");
-        assert.equal(formatDate("2026-10-21", "weekday"), "Wednesday, Oct 21, 2026");
-    });
-
     it("knows when parts went up one a day", () => {
         const day = (date) => ({ datePosted: date });
         assert.equal(oneADay([day("2026-10-19"), day("2026-10-20"), day("2026-10-21")]), true);

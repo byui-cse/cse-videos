@@ -86,11 +86,24 @@ const labelNode = (button) => {
     return made;
 };
 
+/**
+ * The page's address in pieces that each keep together: the site, then one
+ * piece per folder. A long address then wraps after a slash, never at the
+ * hyphen inside "cse-videos", which would read as a broken path. Shared with
+ * the build, which writes the video page's link to send with it, so the
+ * address breaks in the same places whether the page was built with its
+ * public address or shows the one it was opened at.
+ * @param {string} address
+ * @returns {string[]}
+ */
+export const addressParts = (address) => address.match(/^[a-z][a-z\d+.-]*:\/\/[^/]*\/?|[^/]+\/?/gi) ?? [address];
+
 export const initShare = () => {
     // A page built without its public address shows the one it was opened at.
     for (const node of document.querySelectorAll("[data-page-url]")) {
         if (!/^https?:/.test(node.textContent ?? "")) {
-            node.textContent = `${window.location.origin}${window.location.pathname}`;
+            const parts = addressParts(`${window.location.origin}${window.location.pathname}`);
+            node.replaceChildren(...parts.map((text) => Object.assign(document.createElement("span"), { textContent: text })));
         }
     }
 

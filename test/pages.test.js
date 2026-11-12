@@ -329,12 +329,30 @@ describe("series on other pages", () => {
         const boards = [...section.matchAll(/class="board__link" href="\.\/videos\/([\w-]+)\/"/g)].map((match) => match[1]);
 
         assert.deepEqual(boards, ["quest-part-1", "quest-part-2", "quest-part-3"]);
-        assert.match(section, /3 parts, posted one a day from <time datetime="2026-10-21">Wednesday, October 21, 2026<\/time> to <time datetime="2026-10-23">Friday, October 23, 2026<\/time>\. Watch them in order: 1 minute 30 seconds in all\./);
+        assert.match(section, /3 parts, posted one a day from <time datetime="2026-10-21">October 21<\/time>&nbsp;to&nbsp;<time datetime="2026-10-23">23, 2026<\/time>\. Watch them in order: 1 minute 30 seconds in all\./);
         assert.match(section, /<span class="board__title">Step 1<\/span>/);
+        assert.match(section, /<span class="board__meta"><time datetime="2026-10-21">Oct 21, 2026<\/time><span aria-hidden="true"> · <\/span><time datetime="PT30S">/);
         assert.ok(!section.includes("That is all"));
-        assert.match(section, /<p class="quest__end"><a href="\.\/tags\/quest\/">Quest on its own page<\/a><\/p>/);
+        // The series' own page is the last of its actions.
+        assert.match(section, /<p class="quest__actions">.*<a class="quest__page" href="\.\/tags\/quest\/">Quest on its own page<\/a><\/p>/);
+        assert.ok(!section.includes("quest__end"));
         assert.match(page, /<a class="site-nav__link" href="#quest">Quest<\/a>/);
         assert.match(page, /<li data-results>5 videos, 2 minutes in all<\/li>/);
+    });
+
+    it("say when a series was posted with its year once, across months and years", () => {
+        const spanOf = (dates) => {
+            const parts = dates.map((date, index) => ({ ...part(index + 1), datePosted: date }));
+            const page = homePage({ ...site, videos: [...parts, other] });
+            return page.match(/<p class="quest__lede">(.*?)<\/p>/)[1];
+        };
+
+        assert.match(spanOf(["2026-09-30", "2026-10-01"]), /posted one a day from <time datetime="2026-09-30">September 30<\/time> to&nbsp;<time datetime="2026-10-01">October 1, 2026<\/time>\./);
+        assert.match(spanOf(["2026-12-20", "2027-01-05"]), /posted from <time datetime="2026-12-20">December 20, 2026<\/time> to&nbsp;<time datetime="2027-01-05">January 5, 2027<\/time>\./);
+        assert.match(spanOf(["2026-10-02"]), /1 part, posted <time datetime="2026-10-02">October 2, 2026<\/time>\./);
+        // Parts posted the same day have one date, never "October 19 to 19".
+        assert.match(spanOf(["2026-10-19", "2026-10-19"]), /2 parts, posted <time datetime="2026-10-19">October 19, 2026<\/time>\./);
+        assert.match(spanOf(["2026-10-19", "2026-10-19", "2026-10-20"]), /3 parts, posted from <time datetime="2026-10-19">October 19<\/time>&nbsp;to&nbsp;<time datetime="2026-10-20">20, 2026<\/time>\./);
     });
 
     it("introduce Career Quest in words, the parts counted from the data", () => {

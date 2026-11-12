@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { notFoundPage, tagPage, tagsPage } from "../lib/render.js";
 import { MISSING_TOPICS } from "../lib/pages/not-found.js";
-import { FEW_VIDEOS } from "../lib/pages/tags.js";
+import { EAGER_TOPICS, FEW_VIDEOS } from "../lib/pages/tags.js";
 
 const video = (id, tags, extra = {}) => ({
     id,
@@ -74,6 +74,9 @@ describe("a topic's page", () => {
         assert.match(page, /<a class="button button--light" href="\.\.\/\.\.\/videos\/quest-part-1\/">Start with Part 1<\/a>/);
         assert.match(page, /<h2 class="visually-hidden" id="listing-heading" tabindex="-1">In part order<\/h2>/);
         assert.ok(tiles(page).every((item) => !item.lead));
+        // Three columns under 1100 px draw each still wider than a tile.
+        const sizes = new Set([...page.matchAll(/<source [^>]*sizes="([^"]+)"/g)].map((match) => match[1]));
+        assert.deepEqual([...sizes], ["(max-width: 699px) 46vw, (max-width: 1099px) 31vw, 256px"]);
     });
 
     it("leaves the series start out of a topic that isn't a series", () => {
@@ -93,6 +96,29 @@ describe("the topics page", () => {
         const order = [...page.matchAll(/<a class="topic__link" href="([\w-]+)\/">/g)].map((match) => match[1]);
         assert.deepEqual(order, ["jobs", "ai", "faith"]);
         assert.match(page, /<li class="topic topic--wide">/);
+        assert.match(page, /<section class="topics" aria-label="Every topic">/);
+    });
+
+    it("loads the first screen's cards at once, and the first card's stills first of all", () => {
+        const slugs = Array.from({ length: EAGER_TOPICS + 2 }, (_, index) => `topic-${String.fromCharCode(97 + index)}`);
+        // Each topic is used once more than the next, so the order is fixed.
+        const videos = slugs.flatMap((slug, rank) => Array.from({ length: slugs.length - rank }, (_, index) => video(`${slug}-${index}`, [slug])));
+        const page = tagsPage(siteOf(videos));
+        const cards = page.split('<li class="topic').slice(1).map((card) => [...card.matchAll(/<img [^>]*>/g)].map((match) => match[0]));
+
+        assert.equal(cards.length, slugs.length);
+
+        cards.forEach((images, index) => {
+            assert.ok(images.length > 0, `${index}`);
+
+            for (const image of images) {
+                assert.match(image, index < EAGER_TOPICS ? /loading="eager"/ : /loading="lazy"/, `${index}`);
+                assert.equal(image.includes('fetchpriority="high"'), index === 0, `${index}`);
+            }
+        });
+
+        // The first card is a wide one, with two stills.
+        assert.equal(cards[0].length, 2);
     });
 });
 

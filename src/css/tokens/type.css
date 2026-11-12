@@ -22,8 +22,6 @@
 	--step-3: clamp(28px, 24.29px + 0.952vw, 38px);
 	--step-4: clamp(33px, 26.69px + 1.619vw, 50px);
 	--step-5: clamp(40px, 29.97px + 2.571vw, 67px);
-	--step-6: clamp(48px, 32.4px + 4vw, 90px);
-	--step-7: clamp(64px, 43.2px + 5.333vw, 120px);
 
 	/* 67 px at 1440, 40 px at 390. */
 	--h1: var(--step-5);

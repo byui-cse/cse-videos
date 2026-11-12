@@ -29,14 +29,17 @@
 	color: #fff;
 }
 
+/* The measure is in em, not ch, so the line count is the same before and
+   after the web font arrives. */
 .quest__lede {
-	max-width: 60ch;
+	max-width: 26em;
 	color: var(--on-blue-muted);
 	font-size: var(--step-1);
 	line-height: 1.45;
+	text-wrap: balance;
 }
 
-/* A date never breaks across lines. */
+/* A date never breaks across lines, nor a span within a month. */
 .quest__lede time {
 	white-space: nowrap;
 }
@@ -44,8 +47,24 @@
 .quest__actions {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	grid-column: 2;
 	gap: 12px;
+}
+
+/* The series' own page, a plain link after the buttons, as tall as they are. */
+.quest__page {
+	display: inline-flex;
+	align-items: center;
+	min-height: 48px;
+	color: #fff;
+	font-weight: 600;
+	text-decoration: underline 1px;
+	text-underline-offset: 3px;
+}
+
+.quest__page:hover {
+	text-decoration-thickness: 2px;
 }
 
 .quest__boards {
@@ -148,12 +167,18 @@
 	white-space: nowrap;
 }
 
+/* The dot is drawn, not set as a character, so it is never read as part of
+   the link's name in any browser: a 3 px disc in the middle of the gap, at
+   the height and about the size of a middle dot. */
 .board__meta > time ~ time::before {
-	content: "·";
+	content: "";
 	position: absolute;
-	left: -1em;
-	width: 1em;
-	text-align: center;
+	top: calc(50% - 1.5px);
+	left: calc(-0.5em - 1.5px);
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: currentColor;
 }
 
 /* Copy link sits at the foot of its board, so a row's links line up however
@@ -170,17 +195,6 @@
 	text-decoration: underline 1px;
 	text-underline-offset: 3px;
 	cursor: pointer;
-}
-
-.quest__end {
-	margin-top: 40px;
-	font-size: var(--step-1);
-	line-height: 1.45;
-}
-
-.quest__end a {
-	color: #fff;
-	font-weight: 600;
 }
 
 @media (max-width: 899px) {

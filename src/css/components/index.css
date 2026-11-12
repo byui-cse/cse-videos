@@ -153,15 +153,15 @@
 	transform: scale(1.04);
 }
 
-/* Every tile in a row is as tall as the row. Its date sits right under its
-   title, and its Copy link at the foot, so a row's links share one line
-   however its titles wrap. */
+/* Every tile in a row is as tall as the row. Its date and Copy link sit at
+   its foot, at least 12 px under its title, so a row's dates share one line
+   and its links another, however its titles wrap. */
 .tile__line {
 	display: flex;
-	flex: 1 0 auto;
 	flex-direction: column;
 	align-items: flex-start;
-	padding-top: 6px;
+	margin-top: auto;
+	padding-top: 12px;
 }
 
 .tile__meta {
@@ -173,7 +173,6 @@
 }
 
 .tile__copy {
-	margin-top: auto;
 	min-height: 44px;
 	padding: 0;
 	border: 0;
@@ -221,11 +220,8 @@
 /* Its date and Copy link stay with its title; the cell's foot is left
    open. */
 .tile--lead .tile__line {
-	padding-top: 8px;
-}
-
-.tile--lead .tile__copy {
 	margin-top: 0;
+	padding-top: 8px;
 }
 
 /* On a phone the index opens on its first videos; the rest wait for "Show

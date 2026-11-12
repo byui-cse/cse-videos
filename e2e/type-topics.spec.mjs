@@ -124,7 +124,7 @@ for (const options of [{ viewport: { width: 390, height: 844 } }, { viewport: { 
         await page.goto("/");
         const row = page.locator("[data-quest-boards]");
         assert.ok(await row.evaluate((node) => node.scrollWidth > node.clientWidth));
-        await page.locator(".quest__actions a").focus();
+        await page.locator(".quest__page").focus();
         const seen = new Set();
 
         for (let step = 0; step < 12; step += 1) {
@@ -181,23 +181,148 @@ for (const width of [1024, 1280, 1440]) {
             const dateLines = [...date.getClientRects()];
             const box = length.getBoundingClientRect();
             const frame = meta.getBoundingClientRect();
+            const dot = getComputedStyle(length, "::before");
             return {
                 sameLine: Math.abs(box.top - dateLines.at(-1).top) < 2,
                 startsLine: Math.abs(box.left - frame.left) < 1,
                 clips: getComputedStyle(meta).overflow === "hidden",
-                separator: getComputedStyle(meta.querySelector(':scope > [aria-hidden="true"]')).display
+                separator: getComputedStyle(meta.querySelector(':scope > [aria-hidden="true"]')).display,
+                // The dot as drawn: no text, a filled disc, its middle in the
+                // middle of the gap after the date.
+                dot: {
+                    content: dot.content,
+                    size: [parseFloat(dot.width), parseFloat(dot.height)],
+                    filled: dot.backgroundColor !== "rgba(0, 0, 0, 0)",
+                    offCentre: Math.abs(box.left + parseFloat(dot.left) + parseFloat(dot.width) / 2 - (dateLines.at(-1).right + box.left) / 2)
+                }
             };
         }));
 
         for (const line of lines) {
             assert.ok(line.sameLine || (line.startsLine && line.clips), JSON.stringify(line));
             assert.equal(line.separator, "none");
+            assert.equal(line.dot.content, '""', JSON.stringify(line));
+            assert.ok(line.dot.filled && line.dot.size.every((side) => side >= 3), JSON.stringify(line));
+
+            if (line.sameLine) {
+                assert.ok(line.dot.offCentre < 1, JSON.stringify(line));
+            }
         }
 
         const tops = await page.locator(".board__copy").evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)));
         assert.equal(new Set(tops).size, 1, JSON.stringify(tops));
+
+        // The dot is drawn, not read: each board's name is its part, title,
+        // date and spoken length.
+        const snapshot = await page.locator(".quest__boards").ariaSnapshot();
+        assert.ok(!snapshot.includes("·"), snapshot);
+        assert.match(snapshot, /link "Part 1 .+ [A-Z][a-z]{2} \d{1,2}, \d{4} \d+ seconds"/);
     });
 }
+
+/**
+ * The tiles in each row of a grid: how many lines the title takes, the gap
+ * from the title to the date, and where the date and Copy link sit.
+ * @param {import("playwright").Page} page
+ * @param {string} selector
+ */
+const tileRows = (page, selector) => page.locator(selector).evaluateAll((items) => {
+    const rows = new Map();
+
+    for (const item of items.filter((node) => node.getClientRects().length > 0)) {
+        const top = Math.round(item.getBoundingClientRect().top);
+        const title = item.querySelector(".tile__title");
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const meta = item.querySelector(".tile__meta").getBoundingClientRect();
+        rows.set(top, [...(rows.get(top) ?? []), {
+            lead: item.classList.contains("tile--lead"),
+            lines: new Set([...range.getClientRects()].map((box) => Math.round(box.top))).size,
+            gap: Math.round(meta.top - title.getBoundingClientRect().bottom),
+            date: Math.round(meta.top),
+            copy: Math.round(item.querySelector(".tile__copy").getBoundingClientRect().top)
+        }]);
+    }
+
+    return [...rows.values()];
+});
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+    test(`a row's dates share one line at least 12 px under its longest title, and its Copy links another, at ${viewport.width} px`, async (t) => {
+        const { page } = await site.page(t, { viewport });
+        const lines = new Set();
+
+        for (const route of ["/", `/tags/${seriesTag}/`]) {
+            await page.goto(route);
+            await page.evaluate(() => document.fonts.ready);
+            await page.locator("[data-show-all]").click({ timeout: 1000 }).catch(() => {});
+
+            for (const row of await tileRows(page, "[data-video-list] > li")) {
+                const tiles = row.filter((tile) => !tile.lead);
+
+                if (tiles.length === 0) {
+                    continue;
+                }
+
+                assert.equal(new Set(tiles.map((tile) => tile.date)).size, 1, `${route} ${JSON.stringify(row)}`);
+                assert.equal(new Set(tiles.map((tile) => tile.copy)).size, 1, `${route} ${JSON.stringify(row)}`);
+                assert.equal(Math.min(...tiles.map((tile) => tile.gap)), 12, `${route} ${JSON.stringify(row)}`);
+                tiles.forEach((tile) => lines.add(tile.lines));
+            }
+        }
+
+        // Rows with one, two and three line titles were all measured.
+        assert.ok([1, 2, 3].every((count) => lines.has(count)), [...lines].join());
+    });
+}
+
+for (const width of [320, 390]) {
+    test(`without its public address, the link to send is the page's own, in pieces that break only after a slash, at ${width} px`, async (t) => {
+        const { page } = await site.page(t, { viewport: { width, height: 640 } });
+        const long = [...videos].sort((a, b) => b.id.length - a.id.length)[0];
+        await page.goto(`/videos/${long.id}/`);
+        await page.evaluate(() => document.fonts.ready);
+        const address = await page.locator("[data-page-url]").evaluate((node) => {
+            // The lines a piece's text runs over; its own box is inline-block,
+            // so its client rects alone would always say one.
+            const lines = (target) => {
+                const range = document.createRange();
+                range.selectNodeContents(target);
+                return new Set([...range.getClientRects()].map((box) => Math.round(box.top))).size;
+            };
+            const style = getComputedStyle(node);
+            const context = document.createElement("canvas").getContext("2d");
+            context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+
+            return {
+                lines: lines(node),
+                room: node.parentElement.clientWidth,
+                pieces: [...node.children].map((piece) => ({ text: piece.textContent, lines: lines(piece), width: Math.round(context.measureText(piece.textContent).width) }))
+            };
+        });
+
+        assert.deepEqual(address.pieces.map((piece) => piece.text), [`${site.origin}/`, "videos/", `${long.id}/`]);
+        assert.ok(address.lines > 1, JSON.stringify(address));
+        // A piece breaks inside itself only where it is wider than the line.
+        assert.ok(address.pieces.every((piece) => piece.lines === 1 || piece.width > address.room), JSON.stringify(address));
+    });
+}
+
+test("the header's search button lands on the field and leaves no #search in the address", async (t) => {
+    const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
+    await page.goto(`/tags/${seriesTag}/`);
+    await page.locator("[data-search-button]").click();
+    await page.waitForFunction(() => document.activeElement?.id === "search");
+    const url = new URL(await page.evaluate(() => window.location.href));
+    assert.equal(url.pathname, "/");
+    assert.equal(url.hash, "");
+    assert.equal(await page.evaluate(() => window.scrollY), 0);
+
+    // A search typed there keeps no hash either.
+    await page.getByRole("searchbox", { name: "Search videos" }).fill("portfolio");
+    await page.waitForFunction(() => new URL(window.location.href).searchParams.get("q") === "portfolio");
+    assert.equal(new URL(await page.evaluate(() => window.location.href)).hash, "");
+});
 
 for (const width of [390, 1440]) {
     test(`nothing moves when the web fonts arrive at ${width} px`, async (t) => {

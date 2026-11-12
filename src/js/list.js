@@ -309,8 +309,11 @@ export const initList = () => {
             });
         }
 
+        // Once there, the field has focus, so the address drops the #search
+        // a reload or a copied link would otherwise jump back to.
         if (window.location.hash === "#search") {
             input.focus();
+            window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
         }
     }
 
