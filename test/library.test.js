@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { COVER_FORMATS, coverSources, derivativePath, derivativeWidths, writeCoverDerivatives } from "../lib/images.js";
 import { clock, formatDate, lengthSeconds, libraryLine, listFacts, oneADay, partTitle, runningTime } from "../lib/site.js";
-import { seededRandom, topicStills, wallOrder } from "../lib/wall.js";
+import { CARD_STILLS, WALL_LEAD, WALL_STILLS, seededRandom, topicStills, wallFill, wallOrder, wallStageCss, wallTotal } from "../lib/wall.js";
 
 const SRC = new URL("../src/", import.meta.url).pathname;
 
@@ -80,6 +80,77 @@ describe("the wall", () => {
         assert.notDeepEqual(order, videos);
         assert.deepEqual(wallOrder(videos), order);
         assert.deepEqual(wallOrder([]), []);
+    });
+
+    it("fills the Video wall with every video once, then echoes up to the count", () => {
+        const videos = Array.from({ length: 36 }, (_, index) => `v${index}`);
+        const stills = wallFill(videos, 98);
+        assert.equal(stills.length, 98);
+        assert.deepEqual(stills.slice(0, 36).map((still) => still.video), videos);
+        assert.ok(stills.slice(0, 36).every((still) => !still.echo));
+        assert.ok(stills.slice(36).every((still) => still.echo));
+        assert.ok(stills.slice(36).every((still) => videos.includes(still.video)));
+        assert.deepEqual(wallFill(videos, 10), videos.map((video) => ({ video, echo: false })));
+        assert.deepEqual(wallFill([], 98), []);
+        assert.deepEqual(wallFill(["solo"], 3), [{ video: "solo", echo: false }, { video: "solo", echo: true }, { video: "solo", echo: true }]);
+    });
+
+    it("can open with a row of echoes before every video's own still", () => {
+        const videos = Array.from({ length: 36 }, (_, index) => `v${index}`);
+        const stills = wallFill(videos, WALL_STILLS, WALL_LEAD);
+        assert.equal(stills.length, WALL_STILLS);
+        assert.ok(stills.slice(0, WALL_LEAD).every((still) => still.echo));
+        assert.deepEqual(stills.slice(WALL_LEAD, WALL_LEAD + 36).map((still) => still.video), videos);
+        assert.ok(stills.slice(WALL_LEAD + 36).every((still) => still.echo));
+        // With more videos than slots, every video still gets its own still.
+        assert.equal(wallFill(videos, 20, WALL_LEAD).length, WALL_LEAD + 36);
+    });
+
+    it("never puts an echo beside, over, under or diagonal to another copy of the same still", () => {
+        const videos = Array.from({ length: 36 }, (_, index) => index);
+        const walls = [
+            { stills: wallFill(videos, 98), columns: [14, 9, 6] },
+            { stills: wallFill(videos, WALL_STILLS, WALL_LEAD), columns: [14, 9, 6] },
+            { stills: wallFill(videos, CARD_STILLS), columns: [9, 6] }
+        ];
+
+        for (const { stills, columns } of walls) {
+            const order = stills.map((still) => still.video);
+
+            for (const cols of columns) {
+                order.forEach((video, slot) => {
+                    const column = slot % cols;
+
+                    for (const [down, across] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+                        const next = slot + down * cols + across;
+
+                        if (column + across >= 0 && column + across < cols && next < order.length) {
+                            assert.notEqual(order[next], video, `${order.length} stills, ${cols} columns: slots ${slot} and ${next}`);
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    it("draws whole rows at every width, with a row of echoes under the last video", () => {
+        assert.equal(wallTotal(0), WALL_STILLS);
+        assert.equal(wallTotal(36), WALL_STILLS);
+        assert.equal(wallTotal(98), WALL_STILLS);
+        assert.equal(wallTotal(99), WALL_STILLS * 2);
+
+        for (const videos of [0, 1, 13, 36, 98, 99, 140, 300]) {
+            const total = wallTotal(videos);
+            assert.ok([14, 9, 6].every((columns) => total % columns === 0), `${videos}`);
+            assert.ok(total >= WALL_LEAD + videos + 14, `${videos}`);
+        }
+    });
+
+    it("counts the Video wall's rows for the stylesheet at each width", () => {
+        assert.equal(wallStageCss(36, 126), ".wall-stage{--wall-rows-wide:4;--wall-full-wide:9;--wall-rows-mid:6;--wall-full-mid:14;--wall-rows-narrow:9;--wall-full-narrow:21}");
+        // A big library draws more stills, so a full row of echoes always ends the wall.
+        assert.equal(wallStageCss(200, wallTotal(200)), ".wall-stage{--wall-rows-wide:16;--wall-full-wide:18;--wall-rows-mid:24;--wall-full-mid:28;--wall-rows-narrow:36;--wall-full-narrow:42}");
+        assert.equal(wallStageCss(0, 126), ".wall-stage{--wall-rows-wide:0;--wall-full-wide:0;--wall-rows-mid:0;--wall-full-mid:0;--wall-rows-narrow:0;--wall-full-narrow:0}");
     });
 
     it("gives each topic card its own still where it can, scarce topics first", () => {

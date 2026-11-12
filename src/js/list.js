@@ -67,7 +67,14 @@ export const initList = () => {
         words: (card.getAttribute("data-search") ?? "").split(" "),
         order: Number(card.getAttribute("data-order"))
     }));
-    const stills = new Map([...document.querySelectorAll("[data-wall] [data-id]")].map((still) => [still.getAttribute("data-id"), still]));
+    // Every still on the hero's wall by video, echoes included.
+    const stills = new Map();
+
+    for (const still of document.querySelectorAll("[data-wall] [data-id]")) {
+        const id = still.getAttribute("data-id");
+        stills.set(id, [...(stills.get(id) ?? []), still]);
+    }
+
     const input = /** @type {HTMLInputElement | null} */ (document.querySelector("[data-search-input]"));
     const sort = /** @type {HTMLSelectElement | null} */ (document.querySelector("[data-sort]"));
     const results = document.querySelector("[data-results]");
@@ -170,9 +177,10 @@ export const initList = () => {
                 card.hidden = !show;
                 shown += show ? 1 : 0;
 
-                const still = stills.get(id);
-                still?.classList.toggle("is-match", query !== "" && show);
-                still?.classList.toggle("is-dim", query !== "" && !show);
+                for (const still of stills.get(id) ?? []) {
+                    still.classList.toggle("is-match", query !== "" && show);
+                    still.classList.toggle("is-dim", query !== "" && !show);
+                }
             }
 
             // Past the fold the rest wait for "Show all" (CSS hides them on
@@ -235,12 +243,13 @@ export const initList = () => {
         list.children[foldAt]?.querySelector("a")?.focus();
     });
 
-    // A phone gets the shorter hint, so it isn't cut off mid-word.
+    // A narrow field gets the shorter hint, so it isn't cut off mid-word: a
+    // phone's, and the hero's beside its card from 800 to 1023 px.
     const shortHint = input?.dataset.placeholderShort;
 
     if (input && shortHint && window.matchMedia) {
         const fullHint = input.placeholder;
-        const phone = window.matchMedia("(max-width: 699px)");
+        const phone = window.matchMedia("(max-width: 699px), (min-width: 800px) and (max-width: 1023px)");
         const hint = () => {
             input.placeholder = phone.matches ? shortHint : fullHint;
         };

@@ -1,9 +1,10 @@
 /**
  * Colors: the CS & SE palette. BYU-I blue for the utility bar and footer,
- * band navy and band-deep for the strip, the player and Career Quest, white
- * for the masthead and sections, warm paper under the stills. Gold has three
- * meanings and is never a ground or used on white: matches your search,
- * the player you are watching on, and lit. Dark values follow the OS.
+ * a blue-to-navy gradient for the home hero, band navy and band-deep for the
+ * strip, the player and Career Quest, white for the masthead and sections,
+ * warm paper under the stills. Gold is never a ground or used on white; it
+ * marks matches to your search, the player you are watching on, what is lit,
+ * and the second line of the home headline. Dark values follow the OS.
  */
 :root {
 	color-scheme: light dark;
@@ -28,6 +29,10 @@
 	--focus-on-band: #d0901e;
 	--photo-brightness: 1;
 	--veil: rgb(0 55 99 / 45%);
+	--veil-light: rgb(0 55 99 / 28%);
+	--hero-start: #00589c;
+	--hero-grid: rgb(255 255 255 / 5%);
+	--on-hero-muted: #cdd9e6;
 	--light-button: #fff;
 	--light-button-hover: #e8f0f8;
 	--light-button-ink: #0065b0;
@@ -49,5 +54,8 @@
 		--focus: #d0901e;
 		--photo-brightness: 0.87;
 		--veil: rgb(0 27 54 / 50%);
+		--veil-light: rgb(0 27 54 / 34%);
+		--hero-start: #00335d;
+		--hero-grid: rgb(255 255 255 / 4%);
 	}
 }

@@ -1,24 +1,15 @@
 /**
- * The home page's first screen: every reel as a full-bleed wall of stills,
- * with a slim band-deep strip across its foot holding one plain line and the
- * search. The wall's stills are links for the pointer (the index below has
- * every video for the keyboard); pointing at one lights it and names it on a
- * solid strip along its lower edge. A search lights the stills that match
- * with a gold edge and dims the rest.
+ * The wall of reel stills, in two places: shrunk into the home page's card
+ * (nine columns; six where the card is 4:3 and on a phone) and filling the
+ * Video wall page (fourteen, nine, six). Each column is lifted by a different
+ * part of a still so no row lines up. Pointing at a still lights it and names
+ * it in one label (the card's corner, the Video wall's strip; src/js/wall.js).
+ * Without JavaScript the Video wall names it on a strip along its lower edge
+ * instead. A search lights the stills that match with a gold edge and dims
+ * the rest.
  */
-/* Clipped, not hidden, so nothing can scroll the columns inside it. */
-.hero {
-	position: relative;
-	height: max(560px, calc(100svh - var(--chrome)));
-	overflow: hidden;
-	overflow: clip;
-	background: var(--band-deep);
-}
-
-/* Columns of stills at a sixth of the width (240 px at 1440), each column
-   lifted by a different part of a still so no row lines up. */
 .wall {
-	--cols: 6;
+	--cols: 9;
 	position: absolute;
 	inset: 0;
 	display: grid;
@@ -29,6 +20,11 @@
 	list-style: none;
 }
 
+/* The Video wall takes its column count from its stage. */
+.wall--page {
+	--cols: inherit;
+}
+
 .wall__still {
 	--lift: 0;
 	position: relative;
@@ -36,12 +32,30 @@
 	transform: translateY(calc(var(--lift) * -100%));
 }
 
-.wall__still:nth-child(6n + 1) { --lift: 0.38; }
-.wall__still:nth-child(6n + 2) { --lift: 0.72; }
-.wall__still:nth-child(6n + 3) { --lift: 0.14; }
-.wall__still:nth-child(6n + 4) { --lift: 0.55; }
-.wall__still:nth-child(6n + 5) { --lift: 0.86; }
-.wall__still:nth-child(6n + 6) { --lift: 0.26; }
+.wall--page .wall__still:nth-child(14n + 1) { --lift: 0.38; }
+.wall--page .wall__still:nth-child(14n + 2) { --lift: 0.72; }
+.wall--page .wall__still:nth-child(14n + 3) { --lift: 0.14; }
+.wall--page .wall__still:nth-child(14n + 4) { --lift: 0.55; }
+.wall--page .wall__still:nth-child(14n + 5) { --lift: 0.86; }
+.wall--page .wall__still:nth-child(14n + 6) { --lift: 0.26; }
+.wall--page .wall__still:nth-child(14n + 7) { --lift: 0.62; }
+.wall--page .wall__still:nth-child(14n + 8) { --lift: 0.08; }
+.wall--page .wall__still:nth-child(14n + 9) { --lift: 0.44; }
+.wall--page .wall__still:nth-child(14n + 10) { --lift: 0.78; }
+.wall--page .wall__still:nth-child(14n + 11) { --lift: 0.2; }
+.wall--page .wall__still:nth-child(14n + 12) { --lift: 0.5; }
+.wall--page .wall__still:nth-child(14n + 13) { --lift: 0.9; }
+.wall--page .wall__still:nth-child(14n + 14) { --lift: 0.32; }
+
+.wall--card .wall__still:nth-child(9n + 1) { --lift: 0.38; }
+.wall--card .wall__still:nth-child(9n + 2) { --lift: 0.72; }
+.wall--card .wall__still:nth-child(9n + 3) { --lift: 0.14; }
+.wall--card .wall__still:nth-child(9n + 4) { --lift: 0.55; }
+.wall--card .wall__still:nth-child(9n + 5) { --lift: 0.86; }
+.wall--card .wall__still:nth-child(9n + 6) { --lift: 0.26; }
+.wall--card .wall__still:nth-child(9n + 7) { --lift: 0.62; }
+.wall--card .wall__still:nth-child(9n + 8) { --lift: 0.08; }
+.wall--card .wall__still:nth-child(9n + 9) { --lift: 0.44; }
 
 .wall__link {
 	position: absolute;
@@ -51,7 +65,7 @@
 	text-decoration: none;
 }
 
-/* Stills keep square corners everywhere; only controls take the 4 px corner. */
+/* Stills keep square corners everywhere; only controls take a rounded corner. */
 .wall__frame {
 	position: absolute;
 	inset: 0;
@@ -72,6 +86,10 @@
 	transition: opacity 180ms var(--state);
 }
 
+.wall--card .wall__veil {
+	background: var(--veil-light);
+}
+
 .wall__edge {
 	position: absolute;
 	inset: 0;
@@ -81,54 +99,144 @@
 	transition: opacity 200ms var(--state);
 }
 
+.wall--card .wall__edge {
+	border-width: 2px;
+}
+
 .wall__caption {
 	position: absolute;
 	right: 0;
 	bottom: 0;
 	left: 0;
-	padding: 10px 12px 12px;
+	padding: 8px 9px 9px;
 	background: var(--band-deep);
 	color: #fff;
 	font-size: 16px;
 	font-weight: 600;
-	line-height: 1.3;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
 	opacity: 0;
 	transform: translateY(6px);
 	transition: opacity 180ms var(--state), transform 180ms var(--state);
 	pointer-events: none;
 }
 
+/* The card's stills are too small to caption; its label names them. */
+.wall--card .wall__caption {
+	display: none;
+}
+
+/* With its label running, the Video wall's own captions step aside but stay
+   the links' names for screen readers. */
+.wall--page.has-label .wall__caption {
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 .wall__link:hover .wall__veil,
+.wall__link:focus-visible .wall__veil,
 .wall__still.is-match .wall__veil {
 	opacity: 0;
 }
 
 .wall__still.is-dim picture {
-	opacity: 0.25;
+	opacity: 0.22;
 }
 
 /* A dimmed still lights again while pointed at. */
-.wall__link:hover picture {
+.wall__link:hover picture,
+.wall__link:focus-visible picture {
 	opacity: 1;
 }
 
-.wall__link:hover .wall__caption {
+.wall__link:hover .wall__caption,
+.wall__link:focus-visible .wall__caption {
 	opacity: 1;
 	transform: none;
+}
+
+/* A pointed or focused still rises over its neighbours, so its caption shows whole. */
+.wall__still:hover,
+.wall__still:focus-within {
+	z-index: 1;
+}
+
+/* The focus ring sits over the still, white with a navy edge, so it reads on
+   any still and apart from a match's gold edge. The transparent outline is
+   for forced-colours modes, which draw it. */
+.wall__link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--band-deep);
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wall__link:focus-visible {
+	outline: 3px solid transparent;
+	outline-offset: -3px;
+}
+
+.wall__link:focus-visible::after {
+	opacity: 1;
 }
 
 .wall__still.is-match .wall__edge {
 	opacity: 1;
 }
 
-/* The strip: about 145 px at 1440, the line on the left, one wide search
-   field on the right with the count under it. */
+/* The Video wall page. The wall is as tall as the screen above the strip,
+   and never shorter than the rows holding the lead and every video's own
+   still (the build sets --wall-rows-* from the data), so no video's still is
+   cut off, nor taller than its last full row (--wall-full-*), so no column
+   runs short; on a very tall screen the page goes on below the strip. The
+   strip comes after the wall and stays docked at the foot of the screen
+   while the wall scrolls under it. */
+.wall-stage {
+	--cols: 14;
+	--rows: var(--wall-rows-wide, 4);
+	--full: var(--wall-full-wide, 9);
+	display: flex;
+	flex-direction: column;
+	container-type: inline-size;
+	background: var(--band-deep);
+}
+
+.wall-stage__area {
+	--still: calc(100vw / var(--cols) * 750 / 480);
+	--needed: calc((var(--rows) - 0.08) * var(--still));
+	position: relative;
+	order: 1;
+	height: max(var(--needed), min(calc(100svh - var(--chrome) - var(--strip)), calc((var(--full) - 1) * var(--still))));
+	overflow: hidden;
+	overflow: clip;
+}
+
+/* The stage's own width, without a classic scrollbar's 17 px, where the
+   browser can measure it. */
+@supports (width: 1cqw) {
+	.wall-stage__area {
+		--still: calc(100cqw / var(--cols) * 750 / 480);
+	}
+}
+
+/* A focused still scrolls clear of the docked strip. */
+:root:has(.wall-stage) {
+	scroll-padding-bottom: calc(var(--strip) + 8px);
+}
+
+
 .band {
-	position: absolute;
-	right: 0;
+	position: sticky;
 	bottom: 0;
-	left: 0;
 	z-index: 2;
+	order: 2;
 	background: var(--band-deep);
 	color: #fff;
 }
@@ -137,13 +245,31 @@
 	outline-color: var(--focus-on-band);
 }
 
+/* On a very short screen, or zoomed in far, the strip would cover most of
+   it; there the strip stays put at the wall's foot and the wall scrolls free. */
+@media (max-height: 480px) {
+	.band {
+		position: static;
+	}
+
+	:root:has(.wall-stage) {
+		scroll-padding-bottom: 16px;
+	}
+}
+
 .band__inner {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
 	align-items: center;
 	column-gap: 48px;
-	row-gap: 14px;
-	padding-block: 28px 30px;
+	row-gap: 12px;
+	padding-block: 22px 24px;
+}
+
+.band__lead {
+	display: grid;
+	gap: 6px;
+	min-width: 0;
 }
 
 .band__title {
@@ -156,42 +282,27 @@
 	letter-spacing: -0.015em;
 }
 
+/* The name of the still under the pointer or the focus. */
+.band__pointing {
+	overflow: hidden;
+	min-height: 1.3em;
+	color: var(--gold);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.3;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	opacity: 0;
+	transition: opacity 160ms var(--state);
+}
+
+.band__pointing.is-shown {
+	opacity: 1;
+}
+
 .band__find {
 	display: grid;
 	gap: 8px;
-}
-
-.search__field {
-	position: relative;
-}
-
-.search-icon {
-	flex: 0 0 auto;
-}
-
-.search__field .search-icon {
-	position: absolute;
-	top: 50%;
-	left: 18px;
-	color: #525c66;
-	transform: translateY(-50%);
-	pointer-events: none;
-}
-
-.search__input {
-	width: 100%;
-	height: 58px;
-	padding: 0 20px 0 54px;
-	border: 0;
-	border-radius: 4px;
-	background: #fff;
-	color: #1d252d;
-	font-size: var(--step-1);
-}
-
-.search__input::placeholder {
-	color: #525c66;
-	opacity: 1;
 }
 
 .band__count {
@@ -202,49 +313,73 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* Under 1100 px the line sits over the field, both at full width, and the
-   wall has four columns of about 192 px. */
+/* Under 1100 px the line sits over the field, and the Video wall has nine
+   columns. */
 @media (max-width: 1099px) {
 	.band__inner {
 		grid-template-columns: minmax(0, 1fr);
-		padding-block: 24px 26px;
-	}
-
-	.search__input {
-		height: 56px;
-	}
-
-	.wall {
-		--cols: 4;
-	}
-
-	.wall__still:nth-child(4n + 1) { --lift: 0.32; }
-	.wall__still:nth-child(4n + 2) { --lift: 0.7; }
-	.wall__still:nth-child(4n + 3) { --lift: 0.12; }
-	.wall__still:nth-child(4n + 4) { --lift: 0.52; }
-}
-
-@media (max-width: 699px) {
-	.wall {
-		--cols: 3;
-	}
-
-	.wall__still:nth-child(3n + 1) { --lift: 0.3; }
-	.wall__still:nth-child(3n + 2) { --lift: 0.74; }
-	.wall__still:nth-child(3n + 3) { --lift: 0.12; }
-
-	.band__inner {
-		row-gap: 12px;
 		padding-block: 18px 20px;
 	}
 
-	.search__input {
-		height: 52px;
-		padding-left: 50px;
-		font-size: 18px;
+	.wall-stage {
+		--cols: 9;
+		--rows: var(--wall-rows-mid, 6);
+		--full: var(--wall-full-mid, 14);
 	}
 
-	.search__field .search-icon {
-		left: 16px;
+	.wall--page .wall__still:nth-child(9n + 1) { --lift: 0.38; }
+	.wall--page .wall__still:nth-child(9n + 2) { --lift: 0.72; }
+	.wall--page .wall__still:nth-child(9n + 3) { --lift: 0.14; }
+	.wall--page .wall__still:nth-child(9n + 4) { --lift: 0.55; }
+	.wall--page .wall__still:nth-child(9n + 5) { --lift: 0.86; }
+	.wall--page .wall__still:nth-child(9n + 6) { --lift: 0.26; }
+	.wall--page .wall__still:nth-child(9n + 7) { --lift: 0.62; }
+	.wall--page .wall__still:nth-child(9n + 8) { --lift: 0.08; }
+	.wall--page .wall__still:nth-child(9n + 9) { --lift: 0.44; }
+}
+
+/* Where the card is 4:3 beside the copy, and on a phone, it has six columns. */
+@media (min-width: 800px) and (max-width: 1099px), (max-width: 699px) {
+	.wall--card {
+		--cols: 6;
+	}
+
+	.wall--card .wall__still:nth-child(6n + 1) { --lift: 0.38; }
+	.wall--card .wall__still:nth-child(6n + 2) { --lift: 0.72; }
+	.wall--card .wall__still:nth-child(6n + 3) { --lift: 0.14; }
+	.wall--card .wall__still:nth-child(6n + 4) { --lift: 0.55; }
+	.wall--card .wall__still:nth-child(6n + 5) { --lift: 0.86; }
+	.wall--card .wall__still:nth-child(6n + 6) { --lift: 0.26; }
+}
+
+/* On a phone the Video wall has six columns too. */
+@media (max-width: 699px) {
+	.wall-stage {
+		--cols: 6;
+		--rows: var(--wall-rows-narrow, 9);
+		--full: var(--wall-full-narrow, 21);
+	}
+
+	.wall--page .wall__still:nth-child(6n + 1) { --lift: 0.38; }
+	.wall--page .wall__still:nth-child(6n + 2) { --lift: 0.72; }
+	.wall--page .wall__still:nth-child(6n + 3) { --lift: 0.14; }
+	.wall--page .wall__still:nth-child(6n + 4) { --lift: 0.55; }
+	.wall--page .wall__still:nth-child(6n + 5) { --lift: 0.86; }
+	.wall--page .wall__still:nth-child(6n + 6) { --lift: 0.26; }
+
+	.wall__caption {
+		padding: 6px 7px 7px;
+	}
+
+	.band__inner {
+		row-gap: 10px;
+		padding-block: 14px 16px;
+	}
+}
+
+/* Touch screens have no pointer to name a still under. */
+@media (hover: none) {
+	.band__pointing {
+		display: none;
 	}
 }

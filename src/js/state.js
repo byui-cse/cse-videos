@@ -165,10 +165,11 @@ export const isPlainClick = (click) => click.button === 0
     && !click.defaultPrevented;
 
 /**
- * A list page that led to this video, if it belongs to this site.
+ * A list page that led to this video, if it belongs to this site: the home
+ * page, the Video wall, or a tag page, with or without a search.
  * @param {string} referrer
  * @param {string} here
- * @returns {{ href: string, kind: "results" | "tag" | "home" } | null}
+ * @returns {{ href: string, kind: "results" | "tag" | "wall" | "home" } | null}
  */
 export const backTarget = (referrer, here) => {
     if (!referrer) {
@@ -186,14 +187,15 @@ export const backTarget = (referrer, here) => {
 
         const root = videoPath[1];
         const isHome = previous.pathname === root;
+        const isWall = previous.pathname === `${root}wall/`;
         const isTag = previous.pathname.startsWith(root)
             && /^tags\/[^/]+\/$/.test(previous.pathname.slice(root.length));
 
-        if (!isHome && !isTag) {
+        if (!isHome && !isWall && !isTag) {
             return null;
         }
 
-        const kind = readListParams(previous.search).query !== "" ? "results" : isTag ? "tag" : "home";
+        const kind = readListParams(previous.search).query !== "" ? "results" : isTag ? "tag" : isWall ? "wall" : "home";
         return { href: referrer, kind };
     } catch {
         return null;

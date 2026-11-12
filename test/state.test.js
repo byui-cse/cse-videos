@@ -91,6 +91,16 @@ describe("back link", () => {
         assert.equal(backTarget("https://example.org/", "https://example.org/cse-videos/videos/intro/"), null);
     });
 
+    it("returns to the Video wall, with its search when it had one", () => {
+        assert.deepEqual(backTarget("https://example.org/wall/", here), { href: "https://example.org/wall/", kind: "wall" });
+        assert.deepEqual(backTarget("https://example.org/wall/?q=portfolio", here), { href: "https://example.org/wall/?q=portfolio", kind: "results" });
+        assert.deepEqual(backTarget("https://example.org/cse-videos/wall/", "https://example.org/cse-videos/videos/intro/"), {
+            href: "https://example.org/cse-videos/wall/", kind: "wall"
+        });
+        assert.equal(backTarget("https://example.org/wall/extra/", here), null);
+        assert.equal(backTarget("https://example.org/wall", here), null);
+    });
+
     it("ignores pages that are not a list on this site", () => {
         assert.equal(backTarget("https://other.org/?q=portfolio", here), null);
         assert.equal(backTarget("", here), null);
