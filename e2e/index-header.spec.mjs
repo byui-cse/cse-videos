@@ -86,7 +86,7 @@ test("only the plain list draws its newest video large", async (t) => {
     assert.deepEqual(await leads(), []);
 });
 
-test("a tile's date sits right under its title, and a row's Copy links share one line", async (t) => {
+test("the lead's date sits right under its title, and each row's dates and Copy links share a line", async (t) => {
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
@@ -100,16 +100,25 @@ test("a tile's date sits right under its title, and a row's Copy links share one
             byRow.set(top, [...(byRow.get(top) ?? []), {
                 lead: item.classList.contains("tile--lead"),
                 gap: Math.round(meta.top - title.bottom),
+                metaTop: Math.round(meta.top),
                 copyTop: Math.round(copy.top)
             }]);
         }
         return [...byRow.values()];
     });
-    const gaps = new Set(rows.flat().map((tile) => tile.gap));
-    assert.ok([...gaps].every((gap) => gap >= 4 && gap <= 12), [...gaps].join());
+    const leads = rows.flat().filter((tile) => tile.lead);
+    assert.equal(leads.length, 1);
+    assert.ok(leads[0].gap >= 4 && leads[0].gap <= 12, JSON.stringify(leads));
+    // The other tiles put their dates and Copy links at their feet, so a
+    // row's dates line up 12 px under its longest title.
     for (const row of rows) {
-        const copies = new Set(row.filter((tile) => !tile.lead).map((tile) => tile.copyTop));
-        assert.ok(copies.size <= 1, JSON.stringify(row));
+        const tiles = row.filter((tile) => !tile.lead);
+        if (tiles.length === 0) {
+            continue;
+        }
+        assert.equal(new Set(tiles.map((tile) => tile.metaTop)).size, 1, JSON.stringify(row));
+        assert.equal(new Set(tiles.map((tile) => tile.copyTop)).size, 1, JSON.stringify(row));
+        assert.equal(Math.min(...tiles.map((tile) => tile.gap)), 12, JSON.stringify(row));
     }
 });
 
@@ -126,8 +135,8 @@ for (const width of [320, 390, 699]) {
         assert.equal(await page.locator(".site-footer").getByRole("link", { name: "Career Quest" }).isVisible(), true);
 
         await button.tap();
-        await page.waitForURL((url) => url.pathname === "/" && url.hash === "#search");
-        await page.waitForFunction(() => document.activeElement?.id === "search");
+        // list.js drops #search from the address once the field has focus.
+        await page.waitForFunction(() => document.activeElement?.id === "search" && window.location.pathname === "/");
     });
 }
 

@@ -105,6 +105,16 @@ describe("video page band", () => {
         assert.match(page, /<p class="player-band__series"><a href="\.\.\/\.\.\/tags\/quest\/">Quest<\/a>, part 2 of 3<\/p>/);
         assert.ok(!page.includes("<dt>Series</dt>"));
     });
+
+    it("sizes the series row's stills for its columns, three under 1100 px", () => {
+        const part = (number) => ({ ...reel(), id: `quest-part-${number}`, title: `Quest, Part ${number}: Step ${number}`, series: "quest", part: number, tags: ["quest"] });
+        const videos = [part(1), part(2), part(3)];
+        const page = videoPage(siteOf(videos), videos[1]);
+        const row = page.slice(page.indexOf('<ol class="grid grid--parts">'), page.indexOf("</ol>", page.indexOf('<ol class="grid grid--parts">')));
+        const sizes = new Set([...row.matchAll(/<source [^>]*sizes="([^"]+)"/g)].map((match) => match[1]));
+
+        assert.deepEqual([...sizes], ["(max-width: 699px) 46vw, (max-width: 1099px) 31vw, 256px"]);
+    });
 });
 
 describe("the address to send", () => {

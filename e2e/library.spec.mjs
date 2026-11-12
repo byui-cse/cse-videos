@@ -850,8 +850,8 @@ test("the header's search button on another page lands on the hero with its head
     const { page } = await site.page(t, { viewport: { width: 1440, height: 900 } });
     await page.goto(videoPath);
     await page.locator("[data-search-button]").click();
-    await page.waitForURL(/#search$/);
-    await page.waitForFunction(() => document.activeElement?.id === "search");
+    // list.js drops #search from the address once the field has focus.
+    await page.waitForFunction(() => document.activeElement?.id === "search" && window.location.pathname === "/");
     assert.equal(await page.evaluate(() => window.scrollY), 0);
     const title = await page.getByRole("heading", { level: 1 }).boundingBox();
     assert.ok(title.y >= 0);
