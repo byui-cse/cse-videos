@@ -44,7 +44,7 @@
 
 /* The headline's size, capped by the screen's height on a short laptop and
    by the card's width on a narrow one, and the width of its first line
-   ("Find the right video" is 7.54 of it). The copy's column is as wide as
+   ("See what students" is 7.38 of it). The copy's column is as wide as
    that line in the web font, and the card takes the rest, up to 0.53 of
    the row after a 64 px gap (as large as it was before the copy grew); the
    gap takes what is left over. Air: 112 px above the capitals and under
@@ -60,7 +60,7 @@
    card has over the copy. */
 .hero__inner {
 	--title: clamp(62px, min(6.4vw - 11px, 9.6vh), 80px);
-	--measure: calc(var(--title) * 7.54);
+	--measure: calc(var(--title) * 7.38);
 	--lede: clamp(19px, var(--title) * 0.27, 23px);
 	--lede-room: calc(var(--lede) * 1.45 + var(--title) * 0.4);
 	--field: clamp(56px, var(--title) * 0.75, 64px);
@@ -137,8 +137,8 @@
 	left: 20px;
 }
 
-/* The facts and the way to the Video wall under them share one set of
-   type, and their lines are 44 px apart, the links in them 44 px targets.
+/* The facts and the two ways out under them (the Video wall and the
+   department's degrees) share one set of type, and their lines are 44 px apart, the links in them 44 px targets.
    The last row ends on the way's baseline, where the card's foot is, its
    last 18 px hanging under it into the hero's air. */
 .hero__facts,
@@ -268,13 +268,16 @@
 	}
 }
 
-/* The way to the Video wall, the copy's last line, its words on the
-   copy's left edge and its baseline on the card's foot. */
+/* The ways out, the copy's last line, their words starting on the
+   copy's left edge and their baseline on the card's foot. On a narrow
+   screen they wrap. */
 .hero__under {
 	grid-row: 7;
 	justify-self: start;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
+	gap: 0 28px;
 	min-width: 0;
 	margin-bottom: -18px;
 }
@@ -530,6 +533,20 @@
 	.hero__card {
 		max-height: none;
 		aspect-ratio: auto;
+	}
+}
+
+/* On a phone the two ways out share one row: the video wall and the
+   department's degrees. Under 360 px their arrows go, so they still fit. */
+@media (max-width: 519px) {
+	.hero__under {
+		column-gap: 12px;
+	}
+}
+
+@media (max-width: 359px) {
+	.hero__open .arrow-icon {
+		display: none;
 	}
 }
 

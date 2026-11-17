@@ -185,17 +185,17 @@ describe("home page", () => {
         assert.ok(!page.includes("<older>"));
     });
 
-    it("hides the search form, and the line about it, until JavaScript can run it", async () => {
+    it("hides the search form until JavaScript can run it, but never the lede", async () => {
         const page = await read("index.html");
         assert.match(page, /<form class="search hero__search" role="search" action="\.\/" method="get" data-search-form data-needs-js hidden>/);
-        assert.match(page, /<p class="hero__lede" data-needs-js hidden>/);
+        assert.match(page, /<p class="hero__lede">/);
         assert.match(page, /name="q"/);
     });
 
     it("puts the headline, a line on the search, the search and the counts beside a card holding the wall", async () => {
         const page = await read("index.html");
         const hero = page.slice(page.indexOf('<section class="hero"'), page.indexOf('<section class="index"'));
-        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">Find the right video<\/span> <span class="hero__line hero__line--accent">for a student<\/span><\/h1>\s*<p class="hero__lede" data-needs-js hidden>Search by topic, title or caption, then copy a link to send\.<\/p>\s*<form class="search hero__search"/);
+        assert.match(hero, /<h1 class="hero__title" id="page-title"><span class="hero__line">See what students<\/span> <span class="hero__line hero__line--accent">build at BYU-Idaho<\/span><\/h1>\s*<p class="hero__lede">Student projects, internships and advice from our faculty\.<\/p>\s*<form class="search hero__search"/);
         assert.match(hero, /<ul class="hero__facts">\s*<li data-results>3 videos<\/li>\s*<li><a href="\.\/tags\/">3 topics<\/a><\/li>\s*<\/ul>/);
         assert.match(hero, /<div class="hero__media">\s*<div class="hero__card">\s*<ul class="wall wall--card" aria-hidden="true" data-wall>/);
     });
@@ -208,6 +208,7 @@ describe("home page", () => {
         assert.match(card, /<\/ul>\s*<\/div>\s*$/);
         assert.ok(!page.includes("data-wall-caption"));
         assert.match(hero, /<div class="hero__under">\s*<a class="hero__open" href="\.\/wall\/">Open the video wall <svg class="arrow-icon"[^>]*aria-hidden="true"/);
+        assert.match(hero, /<a class="hero__open" href="https:\/\/www\.byui\.edu\/computer-science-engineering\/">Our degrees <svg class="arrow-icon"/);
     });
 
     it("links home with ./ so the site name and All videos link clear a search", async () => {
