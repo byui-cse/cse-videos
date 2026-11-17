@@ -450,15 +450,15 @@ test("the wall stays out of the keyboard's way: tabbing from the search goes to 
         assert.equal(await page.getByRole("list", { name: /wall/i }).count(), 0);
         assert.equal(await page.locator("[data-wall] a").count(), 0);
 
-        // From the search, Tab goes to the topics link and the card's button, then
-        // into the index, never onto a still.
+        // From the search, Tab goes to the topics link, the video wall and the
+        // degrees, then into the index, never onto a still.
         await page.getByRole("searchbox", { name: "Search videos" }).focus();
         const stops = [];
-        for (let step = 0; step < 3; step++) {
+        for (let step = 0; step < 4; step++) {
             await page.keyboard.press("Tab");
             stops.push(await page.evaluate(() => document.activeElement.textContent.trim()));
         }
-        assert.deepEqual(stops.slice(0, 2), [`${new Set(videos.flatMap((item) => item.tags)).size} topics`, "Open the video wall"], `${viewport.width}`);
+        assert.deepEqual(stops.slice(0, 3), [`${new Set(videos.flatMap((item) => item.tags)).size} topics`, "Open the video wall", "Our degrees"], `${viewport.width}`);
         assert.equal(await page.evaluate(() => document.querySelector("#all-videos").contains(document.activeElement)), true, `${viewport.width}: focus left the index`);
         for (let step = 0; step < 6; step++) {
             await page.keyboard.press("Tab");
@@ -1044,7 +1044,7 @@ for (const viewport of [{ width: 740, height: 360 }, { width: 812, height: 375 }
 }
 
 for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }]) {
-    test(`without JavaScript the hero leaves out the line about the search, and its card keeps its height at ${viewport.width}x${viewport.height}`, async (t) => {
+    test(`without JavaScript the hero keeps its lede, and its card keeps its height at ${viewport.width}x${viewport.height}`, async (t) => {
         const seen = [];
         for (const javaScriptEnabled of [true, false]) {
             const { page } = await site.page(t, { viewport, javaScriptEnabled });
@@ -1052,7 +1052,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768
             await page.evaluate(() => document.fonts.ready);
             seen.push({ lede: await page.locator(".hero__lede").isVisible(), card: (await page.locator(".hero__card").boundingBox()).height });
         }
-        assert.deepEqual(seen.map(({ lede }) => lede), [true, false]);
+        assert.deepEqual(seen.map(({ lede }) => lede), [true, true]);
         assert.ok(Math.abs(seen[0].card - seen[1].card) <= 1, JSON.stringify(seen));
     });
 }
